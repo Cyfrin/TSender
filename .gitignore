@@ -12,3 +12,9 @@ docs/
 
 # Dotenv file
 .env
+
+# zksync
+zkout/
+
+# macOS
+.DS_Store
