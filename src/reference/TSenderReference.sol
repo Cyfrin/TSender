@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ITSender} from "src/interfaces/ITSender.sol";
 
 /*
  * @title TSenderReference
@@ -11,11 +11,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * 
  * @notice This contract is meant to be the less gas efficient version of TSender
  */
-contract TSenderReference {
-    using SafeERC20 for IERC20;
-
-    error TSenderReference__TotalDoesntAddUp();
-    error TSenderReference__LengthsDontMatch();
+contract TSenderReference is ITSender {
+    error TSender__TotalDoesntAddUp();
+    error TSender__LengthsDontMatch();
+    error TSender__TransferFailed();
 
     /* 
      * @param tokenAddress The address of the ERC20 token to be airdropped
@@ -24,22 +23,26 @@ contract TSenderReference {
      * @param totalAmount The total amount of tokens to be airdropped
      * 
      */
-    function airdropErc20s(
+    function airdropERC20(
         address tokenAddress,
         address[] calldata recipients,
         uint256[] calldata amounts,
         uint256 totalAmount
     ) external {
         if (recipients.length != amounts.length) {
-            revert TSenderReference__LengthsDontMatch();
+            revert TSender__LengthsDontMatch();
         }
         uint256 actualTotal;
+        bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), totalAmount);
+        if (!success) {
+            revert TSender__TransferFailed();
+        }
         for (uint256 i; i < recipients.length; i++) {
             actualTotal += amounts[i];
-            IERC20(tokenAddress).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
+            IERC20(tokenAddress).transfer(recipients[i], amounts[i]);
         }
         if (actualTotal != totalAmount) {
-            revert TSenderReference__TotalDoesntAddUp();
+            revert TSender__TotalDoesntAddUp();
         }
     }
 
@@ -49,23 +52,23 @@ contract TSenderReference {
      * @param totalAmount The total amount of ETH to be airdropped
      * 
      */
-    function airDropEth(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
+    function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
         external
         payable
     {
         if (recipients.length != amounts.length) {
-            revert TSenderReference__LengthsDontMatch();
+            revert TSender__LengthsDontMatch();
         }
         uint256 actualTotal;
         for (uint256 i; i < recipients.length; i++) {
             actualTotal += amounts[i];
             (bool succ,) = payable(recipients[i]).call{value: amounts[i]}("");
             if (!succ) {
-                revert();
+                revert TSender__TransferFailed();
             }
         }
         if (actualTotal != totalAmount) {
-            revert TSenderReference__TotalDoesntAddUp();
+            revert TSender__TotalDoesntAddUp();
         }
     }
 }

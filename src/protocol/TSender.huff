@@ -1,0 +1,167 @@
+/* Interface */
+#define function airdropERC20(address,address[],uint256[],uint256) nonpayable returns()
+#define function airdropETH(address[], uint256[], uint256) payable returns()
+
+/* Constants */
+#define constant END_MEMORY_LOCATION = 0x100
+#define constant DIFF_MEMORY_LOCATION = 0x120
+#define constant ADDED_AMOUNT_MEMORY_LOCATION = 0x140
+#define constant ADDRESS_OFFSET_MEMORY_LOCATION = 0x160
+#define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION = 0x180
+
+// Offsets
+#define constant TOKEN_ADDRESS_OFFSET = 0x04
+#define constant TOTAL_AMOUNT_OFFSET = 0x64
+#define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
+
+
+/* Methods */
+#define macro AIRDROP_ERC20() = takes (0) returns (0) {
+    // the calldata will be:
+    // <4 bytes - func select> <32 bytes - tokenAddress> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
+    // check for equal lengths
+    // Remember, jump will fire if it gets anything other than 0. 0 is false.
+
+    // cast calldata "airdropERC20(address,address[],uint256[],uint256)" 0x00000000000000000000000000000000075BCd15 [0x0000000000000000000000000000000000bC610A] [77] 77
+
+    // Example calldata:
+    // 0x82947abe 
+    // 00000000000000000000000000000000000000000000000000000000075bcd15    // address
+    // 0000000000000000000000000000000000000000000000000000000000000080    // there are 4 total parameters (20 * 4)
+    // 00000000000000000000000000000000000000000000000000000000000000c0    // 192, for a total of 6 parameters, including stuff in the arrays
+    // 000000000000000000000000000000000000000000000000000000000000004d    // number 
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of addresss
+    // 0000000000000000000000000000000000000000000000000000000000bc610a    // address 2
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of numbers
+    // 000000000000000000000000000000000000000000000000000000000000004d    // number 2
+
+    // cast calldata "airdropERC20(address,address[],uint256[],uint256)" 0x00000000000000000000000000000000075BCd15 ["0x0000000000000000000000000000000000bC610A","0x0000000000000000000000000000000000bC610A"] [77] 78
+
+    // 0x82947abe
+    // 00000000000000000000000000000000000000000000000000000000075bcd15     // first static address
+    // 0000000000000000000000000000000000000000000000000000000000000080     // 128 - there are 4 total parameters
+    // 00000000000000000000000000000000000000000000000000000000000000e0     // 224 - for a total of 7 parameters, including stuff in the arrays
+    // 000000000000000000000000000000000000000000000000000000000000004e     // the 78, last static address
+    // 0000000000000000000000000000000000000000000000000000000000000002     // number of addresses
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // address 1 from array
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // address 2 from array
+    // 0000000000000000000000000000000000000000000000000000000000000001     // number of amounts
+    // 000000000000000000000000000000000000000000000000000000000000004d     // number from array
+
+    // cast calldata "airdropERC20(address,address[],uint256[],uint256,uint256)" 0x00000000000000000000000000000000075BCd15 ["0x0000000000000000000000000000000000bC610A","0x0000000000000000000000000000000000bC610A"] [77] 78 77
+    // 0x7aef0928
+    // 00000000000000000000000000000000000000000000000000000000075bcd15     // first static address
+    // 00000000000000000000000000000000000000000000000000000000000000a0     // 160 - there are 5 total parameters
+    // 0000000000000000000000000000000000000000000000000000000000000100     // 256 - for a total of 8 parameters, including stuff in the arrays
+    // 000000000000000000000000000000000000000000000000000000000000004e     // the 78, second-to last static address
+    // 000000000000000000000000000000000000000000000000000000000000004d     // the 78, last static address
+    // 0000000000000000000000000000000000000000000000000000000000000002     // number of addresses
+    // 0000000000000000000000000000000000000000000000000000000000bc610a
+    // 0000000000000000000000000000000000000000000000000000000000bc610a
+    // 0000000000000000000000000000000000000000000000000000000000000001
+    // 000000000000000000000000000000000000000000000000000000000000004d
+
+    [NUMBER_OF_RECIPIENTS_OFFSET]                // [0x84]
+    calldataload                                 // [recipients.length]
+    dup1                                         // [recipients.length, recipients.length]
+    0x20                                         // [0x20, recipients.length, recipients.length]
+    mul                                          // [recipients.length * 32, recipients.length]
+    [NUMBER_OF_RECIPIENTS_OFFSET]                // [0xa4, recipients.length * 32, recipients.length]
+    0x20                                         // [0x20, 0xa4, recipients.length * 32, recipients.length]
+    add                                          // [0xa4 + 0x20, recipients.length * 32, recipients.length]
+    add                                          // [number_of_amounts_offset, recipients.length]
+
+    // Save this for later
+    dup1                                         // [number_of_amounts_offset, number_of_amounts_offset, recipients.length]
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION]   // [0x180, number_of_amounts_offset, recipients.length]
+    mstore                                       // [number_of_amounts_offset, recipients.length]   
+
+    calldataload                                 // [amounts.length, recipients.length]
+    eq                                           // [amounts.length == recipients.length] // 1 is true 
+    iszero lengths_dont_match_revert jumpi 
+    
+    // transferFrom setup
+    0x23b872dd 0x00 mstore 
+    caller 0x04 mstore 
+    address 0x24 mstore
+    0x44 calldataload mstore
+
+    // Call transferfrom, jump if reverted
+    0x00 0x00 0x64 0x00 0x00 
+    0x04 calldataload 
+    gas 
+    call 
+    iszero transfer_failed_revert jumpi
+
+    // setup transfer 
+    0xa9059cbb 0x00 mstore
+    // Get the "end"
+    0x24 calldataload 0x5 shl 0x24 add 
+    // stick it in some crazy spot in memory
+    [END_MEMORY_LOCATION] mstore
+
+    // setup the diff
+    // remember, our number of amounts is stored in memory, not statically
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub
+    [DIFF_MEMORY_LOCATION] mstore
+
+    [ADDRESS_OFFSET_MEMORY_LOCATION] [NUMBER_OF_RECIPIENTS_OFFSET] mstore 
+    loop_start:
+        // to address
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mload calldataload 0x04 mstore 
+        // amount 
+        [DIFF_MEMORY_LOCATION] mload 
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mload
+        sub calldataload 0x24 mstore 
+        // add added amount to the total
+        0x24 mload [ADDED_AMOUNT_MEMORY_LOCATION] mload add 
+        [ADDED_AMOUNT_MEMORY_LOCATION] mstore
+
+        // do the call
+        0x00 0x00 0x44 0x00 0x00 [TOKEN_ADDRESS_OFFSET] mload gas call 
+        iszero transfer_failed_revert jumpi
+
+        // increment the address ofset
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mload 0x20 add [ADDRESS_OFFSET_MEMORY_LOCATION] mstore
+        // if addressOffset >= end, jump to end
+        [END_MEMORY_LOCATION] mload [ADDRESS_OFFSET_MEMORY_LOCATION] mload lt iszero end_call jumpi
+
+        // Restart loop
+        loop_start jump
+
+    
+    lengths_dont_match_revert:
+        // cast sig TSender__LengthsDontMatch()
+        0x50a302d6 0x00 mstore
+        0x04 0x1c revert
+    
+    transfer_failed_revert:
+        // cast sig TSender__TransferFailed()
+        0xfa10ea06 0x00 mstore
+        0x04 0x1c revert
+    
+    total_doesnt_add_up:
+        // cast sig TSender__TotalDoesntAddUp()
+        0x63b62563 0x00 mstore
+        0x04 0x1c revert
+    
+    end_call:
+        [TOTAL_AMOUNT_OFFSET] mload 
+        [ADDED_AMOUNT_MEMORY_LOCATION] mload eq iszero total_doesnt_add_up jumpi
+    stop
+}
+
+#define macro MAIN() = takes (0) returns (0) {
+    // check for msg.value and revert if so
+    callvalue endcall jumpi
+
+    0x00 calldataload 0xE0 shr
+
+    dup1 __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
+
+    airdropERC20:
+        AIRDROP_ERC20()
+
+    endcall:
+        0x00 0x00 revert
+}

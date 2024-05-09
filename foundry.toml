@@ -4,7 +4,8 @@ out = "out"
 libs = ["lib"]
 remappings = ['@openzeppelin/contracts=lib/openzeppelin-contracts/contracts']
 via-ir = false
-optimizer = false
+ffi = true
+evm_version = "shanghai"
 
 [profile.zksync]
 src = 'src'
@@ -20,6 +21,5 @@ dictionary_weight = 40
 include_storage = true
 include_push_bytes = true
 extra_output = ["storageLayout", "metadata"]
-
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

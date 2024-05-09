@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {TSenderReference} from "src/reference/TSenderReference.sol";
 import {ITSender} from "src/interfaces/ITSender.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
+import {MockFalseTransferFromERC20} from "test/mocks/MockFalseTransferFromERC20.sol";
 
 contract Base_Test is Test {
     ITSender public tSender;
@@ -13,7 +14,7 @@ contract Base_Test is Test {
     address public recipientOne = makeAddr("recipientOne");
     address public recipientTwo = makeAddr("recipientTwo");
 
-    function setUp() public {
+    function setUp() public virtual {
         TSenderReference senderReference = new TSenderReference();
         tSender = ITSender(address(senderReference));
         mockERC20 = new MockERC20();
@@ -35,7 +36,7 @@ contract Base_Test is Test {
 
         // Act
         vm.prank(sender);
-        tSender.airdropErc20s(address(mockERC20), recipients, amounts, uint256(amount));
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, uint256(amount));
 
         // Assert
         assertEq(mockERC20.balanceOf(recipientOne), uint256(amount));
@@ -63,55 +64,11 @@ contract Base_Test is Test {
 
         // Act
         vm.prank(sender);
-        tSender.airdropErc20s(address(mockERC20), recipients, amounts, expectedTotalAmount);
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, expectedTotalAmount);
 
         // Assert
         assertEq(mockERC20.balanceOf(recipientOne), uint256Amount);
         assertEq(mockERC20.balanceOf(recipientTwo), uint256Amount + ONE);
-    }
-
-    function test_airDropEthToOne(uint128 amount, address sender) public {
-        vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
-
-        // Arrange
-        uint256 uint256Amount = uint256(amount);
-        vm.deal(sender, uint256Amount);
-
-        address[] memory recipients = new address[](1);
-        recipients[0] = recipientOne;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = uint256Amount;
-
-        // Act
-        vm.prank(sender);
-        tSender.airDropEth{value: uint256Amount}(recipients, amounts, uint256Amount);
-
-        // Assert
-        assertEq(recipientOne.balance, uint256Amount);
-    }
-
-    function test_airDropEthToMany(uint128 amount, address sender) public {
-        vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
-
-        // Arrange
-        uint256 uint256Amount = uint256(amount);
-        uint256 expectedTotalAmount = (uint256Amount * 2) + ONE;
-        vm.deal(sender, expectedTotalAmount);
-
-        address[] memory recipients = new address[](2);
-        recipients[0] = recipientOne;
-        recipients[1] = recipientTwo;
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = uint256Amount;
-        amounts[1] = uint256Amount + ONE;
-
-        // Act
-        vm.prank(sender);
-        tSender.airDropEth{value: expectedTotalAmount}(recipients, amounts, expectedTotalAmount);
-
-        // Assert
-        assertEq(recipientOne.balance, uint256Amount);
-        assertEq(recipientTwo.balance, uint256Amount + ONE);
     }
 
     function test_airDropErc20ThrowsErrorWhenLengthsDontMatch() public {
@@ -123,8 +80,8 @@ contract Base_Test is Test {
         amounts[1] = uint256(ONE);
 
         // Act
-        vm.expectRevert(TSenderReference.TSenderReference__LengthsDontMatch.selector);
-        tSender.airdropErc20s(address(mockERC20), recipients, amounts, uint256(ONE));
+        vm.expectRevert(TSenderReference.TSender__LengthsDontMatch.selector);
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, uint256(ONE));
     }
 
     function test_airDropErc20ThrowsErrorWhenTotalsDontMatch(uint128 amount) public {
@@ -142,41 +99,10 @@ contract Base_Test is Test {
         recipients[1] = recipientTwo;
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = uint256Amount;
-        amounts[1] = uint256Amount + ONE;
+        amounts[1] = uint256Amount;
 
         // Act
-        vm.expectRevert(TSenderReference.TSenderReference__TotalDoesntAddUp.selector);
-        tSender.airdropErc20s(address(mockERC20), recipients, amounts, uint256Amount);
-    }
-
-    function test_airDropEthThrowsErrorWhenLengthsDontMatch() public {
-        // Arrange
-        address[] memory recipients = new address[](1);
-        recipients[0] = recipientOne;
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = uint256(ONE);
-        amounts[1] = uint256(ONE);
-
-        // Act
-        vm.expectRevert(TSenderReference.TSenderReference__LengthsDontMatch.selector);
-        tSender.airDropEth(recipients, amounts, ONE + ONE);
-    }
-
-    function test_airDropEthThrowsErrorWhenTotalsDontMatch(uint128 amount) public {
-        // Arrange
-        uint256 uint256Amount = uint256(amount);
-        uint256 expectedTotalAmount = (uint256Amount * 2) + ONE;
-        vm.deal(address(this), expectedTotalAmount);
-
-        address[] memory recipients = new address[](2);
-        recipients[0] = recipientOne;
-        recipients[1] = recipientTwo;
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = uint256Amount;
-        amounts[1] = uint256Amount + ONE;
-
-        // Act
-        vm.expectRevert(TSenderReference.TSenderReference__TotalDoesntAddUp.selector);
-        tSender.airDropEth{value: expectedTotalAmount}(recipients, amounts, uint256Amount);
+        vm.expectRevert(TSenderReference.TSender__TotalDoesntAddUp.selector);
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, expectedTotalAmount);
     }
 }
