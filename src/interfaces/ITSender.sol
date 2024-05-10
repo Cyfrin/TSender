@@ -9,7 +9,7 @@ interface ITSender {
         uint256 totalAmount
     ) external;
 
-    function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
-        external
-        payable;
+    // function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
+    //     external
+    //     payable;
 }

@@ -34,6 +34,8 @@ contract TSender {
 
             // transferFrom(address from, address to, uint256 amount)
             // cast sig "transferFrom(address,address,uint256)"
+            // This will result in memory looking like this:
+            // 0x00: 0x23b872dd00000000000000000000000000000000000000000000000000000000
             mstore(0x00, hex"23b872dd")
             // from address
             mstore(0x04, caller())
@@ -50,6 +52,7 @@ contract TSender {
             // transfer(address to, uint256 value)
             mstore(0x00, hex"a9059cbb")
             // end of array
+            // recipients.offset actually points to the recipients.length offset, not the first address of the array offset
             let end := add(recipients.offset, shl(5, recipients.length))
             let diff := sub(recipients.offset, amounts.offset)
 
@@ -60,7 +63,7 @@ contract TSender {
                 mstore(0x04, calldataload(addressOffset))
                 // amount
                 mstore(0x24, calldataload(sub(addressOffset, diff)))
-
+                // Keep track of the total amount
                 addedAmount := add(addedAmount, mload(0x24))
 
                 // transfer the tokens

@@ -20,7 +20,30 @@ contract Base_Test is Test {
         mockERC20 = new MockERC20();
     }
 
-    function test_airDropErc20ToSingle(uint128 amount, address sender) public {
+    function testAirdropERC20ToSingleUnit() public {
+        uint256 amount = ONE;
+        address sender = address(77); // 0x000000000000000000000000000000000000004D
+        address knownRecipient = address(44); // 0x2c
+
+        vm.startPrank(sender);
+        mockERC20.mint(uint256(amount));
+        mockERC20.approve(address(tSender), uint256(amount));
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = knownRecipient;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = uint256(amount);
+
+        // Act
+        vm.prank(sender);
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, uint256(amount));
+
+        // Assert
+        assertEq(mockERC20.balanceOf(knownRecipient), uint256(amount));
+    }
+
+    function test_airDropErc20ToSingleFuzz(uint128 amount, address sender) public {
         vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
 
         // Arrange

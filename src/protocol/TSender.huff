@@ -2,20 +2,28 @@
 #define function airdropERC20(address,address[],uint256[],uint256) nonpayable returns()
 #define function airdropETH(address[], uint256[], uint256) payable returns()
 
-/* Constants */
+/* Memory Locations */
+#define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
+#define constant AMOUNT_MEMORY_LOCATION = 0x40
 #define constant END_MEMORY_LOCATION = 0x100
 #define constant DIFF_MEMORY_LOCATION = 0x120
 #define constant ADDED_AMOUNT_MEMORY_LOCATION = 0x140
 #define constant ADDRESS_OFFSET_MEMORY_LOCATION = 0x160
 #define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION = 0x180
 
-// Offsets
+/* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
 #define constant TOTAL_AMOUNT_OFFSET = 0x64
 #define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
+#define constant RECIPIENT_ONE_OFFSET = 0xa4
+
+/* Constants */ 
+#define constant TWENTY_EIGHT = 0x1c
 
 
 /* Methods */
+// cast sig "airdropERC20(address,address[],uint256[],uint256)"
+// 0x82947abe
 #define macro AIRDROP_ERC20() = takes (0) returns (0) {
     // the calldata will be:
     // <4 bytes - func select> <32 bytes - tokenAddress> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
@@ -26,41 +34,30 @@
 
     // Example calldata:
     // 0x82947abe 
-    // 00000000000000000000000000000000000000000000000000000000075bcd15    // address
-    // 0000000000000000000000000000000000000000000000000000000000000080    // there are 4 total parameters (20 * 4)
+    // 00000000000000000000000000000000000000000000000000000000075bcd15    // erc20 address
+    // 0000000000000000000000000000000000000000000000000000000000000080    // 128, there are 4 total parameters (20 * 4)
     // 00000000000000000000000000000000000000000000000000000000000000c0    // 192, for a total of 6 parameters, including stuff in the arrays
-    // 000000000000000000000000000000000000000000000000000000000000004d    // number 
-    // 0000000000000000000000000000000000000000000000000000000000000001    // number of addresss
-    // 0000000000000000000000000000000000000000000000000000000000bc610a    // address 2
-    // 0000000000000000000000000000000000000000000000000000000000000001    // number of numbers
-    // 000000000000000000000000000000000000000000000000000000000000004d    // number 2
+    // 000000000000000000000000000000000000000000000000000000000000004d    // uint256 totalAmount 
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of recipients
+    // 0000000000000000000000000000000000000000000000000000000000bc610a    // recipient
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of amounts
+    // 000000000000000000000000000000000000000000000000000000000000004d    // amount
 
     // cast calldata "airdropERC20(address,address[],uint256[],uint256)" 0x00000000000000000000000000000000075BCd15 ["0x0000000000000000000000000000000000bC610A","0x0000000000000000000000000000000000bC610A"] [77] 78
 
     // 0x82947abe
-    // 00000000000000000000000000000000000000000000000000000000075bcd15     // first static address
+    // 00000000000000000000000000000000000000000000000000000000075bcd15     // erc20 address
     // 0000000000000000000000000000000000000000000000000000000000000080     // 128 - there are 4 total parameters
     // 00000000000000000000000000000000000000000000000000000000000000e0     // 224 - for a total of 7 parameters, including stuff in the arrays
-    // 000000000000000000000000000000000000000000000000000000000000004e     // the 78, last static address
-    // 0000000000000000000000000000000000000000000000000000000000000002     // number of addresses
-    // 0000000000000000000000000000000000000000000000000000000000bc610a     // address 1 from array
-    // 0000000000000000000000000000000000000000000000000000000000bc610a     // address 2 from array
+    // 000000000000000000000000000000000000000000000000000000000000004e     // 78, totalAmount
+    // 0000000000000000000000000000000000000000000000000000000000000002     // number of recipients
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 1
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 2
     // 0000000000000000000000000000000000000000000000000000000000000001     // number of amounts
-    // 000000000000000000000000000000000000000000000000000000000000004d     // number from array
+    // 000000000000000000000000000000000000000000000000000000000000004d     // amounts 1 
+    // wrong number of amounts! Should revert!
 
-    // cast calldata "airdropERC20(address,address[],uint256[],uint256,uint256)" 0x00000000000000000000000000000000075BCd15 ["0x0000000000000000000000000000000000bC610A","0x0000000000000000000000000000000000bC610A"] [77] 78 77
-    // 0x7aef0928
-    // 00000000000000000000000000000000000000000000000000000000075bcd15     // first static address
-    // 00000000000000000000000000000000000000000000000000000000000000a0     // 160 - there are 5 total parameters
-    // 0000000000000000000000000000000000000000000000000000000000000100     // 256 - for a total of 8 parameters, including stuff in the arrays
-    // 000000000000000000000000000000000000000000000000000000000000004e     // the 78, second-to last static address
-    // 000000000000000000000000000000000000000000000000000000000000004d     // the 78, last static address
-    // 0000000000000000000000000000000000000000000000000000000000000002     // number of addresses
-    // 0000000000000000000000000000000000000000000000000000000000bc610a
-    // 0000000000000000000000000000000000000000000000000000000000bc610a
-    // 0000000000000000000000000000000000000000000000000000000000000001
-    // 000000000000000000000000000000000000000000000000000000000000004d
-
+    // Function selector starts on the bottom of the stack
     [NUMBER_OF_RECIPIENTS_OFFSET]                // [0x84]
     calldataload                                 // [recipients.length]
     dup1                                         // [recipients.length, recipients.length]
@@ -78,75 +75,105 @@
 
     calldataload                                 // [amounts.length, recipients.length]
     eq                                           // [amounts.length == recipients.length] // 1 is true 
-    iszero lengths_dont_match_revert jumpi 
-    
-    // transferFrom setup
-    0x23b872dd 0x00 mstore 
-    caller 0x04 mstore 
-    address 0x24 mstore
-    0x44 calldataload mstore
+    // Function selector is technically still on the bottom of the stack
+    iszero lengths_dont_match_revert jumpi       // []
+     
+    // transferFrom(msg.sender, address(this), amount)
+    // This next line will result in memory looking like this:
+    // 0x0000000000000000000000000000000000000000000000000000000023b872dd
+    // It's different from yul. Yul does a shl (left shift)
+    0x23b872dd 0x00 mstore                       // [] -> {0x00: 0x23b872dd}
+    // Since memory looks like the comment above, we could do a left shift, or we could just say calldata starts at byte offset 28
+    // We do the latter since it means we don't have to do a left shift
+    caller 0x20 mstore                           // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32)} 
+    address 0x40 mstore                          // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32)}
+    // amount should be at 0x64 in calldata, then store it at 0x60 in memory
+    0x64 calldataload 0x60 mstore                // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32), 0x60: amount (bytes32)}
 
-    // Call transferfrom, jump if reverted
-    0x00 0x00 0x64 0x00 0x00 
-    0x04 calldataload 
-    gas 
-    call 
+    ///////////////////////////////////////////////////////////////
+    //              CALL TRANSFERFROM, JUMP IF REVERTED
+    ///////////////////////////////////////////////////////////////
+    // Setup return
+    0x00 0x00 
+    // Setup memory (start at 0x1c aka 28) 
+    // This is because we are not doing the left shift that the yul does when calling `mstore`
+    0x64 [TWENTY_EIGHT]
+    // Setup value & address of ERC20
+    0x00 [TOKEN_ADDRESS_OFFSET] calldataload 
+    gas call // program counter 4c
     iszero transfer_failed_revert jumpi
 
-    // setup transfer 
-    0xa9059cbb 0x00 mstore
-    // Get the "end"
-    0x24 calldataload 0x5 shl 0x24 add 
+    ///////////////////////////////////////////////////////////////
+    //                         TRANSFER SETUP
+    ///////////////////////////////////////////////////////////////
+    // transfer(address,amount)
+    // This next line setups up memory to look like this:
+    // 0x00000000000000000000000000000000000000000000000000000000a9059cbb 
+    0xa9059cbb 0x00 mstore           
+    // let end := add(recipients.offset, shl(5, recipients.length))
+    // recipients.length
+    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
+    // add(recipients.offset, shl(5
+    0x5 shl [RECIPIENT_ONE_OFFSET] add 
     // stick it in some crazy spot in memory
     [END_MEMORY_LOCATION] mstore
 
-    // setup the diff
+    // let diff := sub(recipients.offset, amounts.offset)
     // remember, our number of amounts is stored in memory, not statically
     [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub
     [DIFF_MEMORY_LOCATION] mstore
 
-    [ADDRESS_OFFSET_MEMORY_LOCATION] [NUMBER_OF_RECIPIENTS_OFFSET] mstore 
+    // let addressOffset := recipients.offset
+    [RECIPIENT_ONE_OFFSET] [ADDRESS_OFFSET_MEMORY_LOCATION] mstore 
+
+    // 0x0de0b6b3a7640000
+    // 
+
     loop_start:
         // to address
-        [ADDRESS_OFFSET_MEMORY_LOCATION] mload calldataload 0x04 mstore 
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mload calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore      // it doesn't matter where we store this in memory as long as we don't overwrite 
         // amount 
+        // mstore(0x24, calldataload(sub(addressOffset, diff)))
         [DIFF_MEMORY_LOCATION] mload 
         [ADDRESS_OFFSET_MEMORY_LOCATION] mload
-        sub calldataload 0x24 mstore 
-        // add added amount to the total
-        0x24 mload [ADDED_AMOUNT_MEMORY_LOCATION] mload add 
+        sub calldataload [AMOUNT_MEMORY_LOCATION] mstore                                                                // it doesn't matter where we store this in memory as long as we don't overwrite
+        // addedAmount := add(addedAmount, mload(0x24))
+        [AMOUNT_MEMORY_LOCATION] mload [ADDED_AMOUNT_MEMORY_LOCATION] mload add 
         [ADDED_AMOUNT_MEMORY_LOCATION] mstore
 
-        // do the call
-        0x00 0x00 0x44 0x00 0x00 [TOKEN_ADDRESS_OFFSET] mload gas call 
+        // call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)
+        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 [TOKEN_ADDRESS_OFFSET] calldataload gas call 
         iszero transfer_failed_revert jumpi
 
-        // increment the address ofset
+        // increment the address offset
         [ADDRESS_OFFSET_MEMORY_LOCATION] mload 0x20 add [ADDRESS_OFFSET_MEMORY_LOCATION] mstore
         // if addressOffset >= end, jump to end
+        // if iszero(lt(addressOffset, end)) { break }
         [END_MEMORY_LOCATION] mload [ADDRESS_OFFSET_MEMORY_LOCATION] mload lt iszero end_call jumpi
 
         // Restart loop
+        // Is there a scenario where this is an infinite loop?
         loop_start jump
 
-    
+
     lengths_dont_match_revert:
         // cast sig TSender__LengthsDontMatch()
         0x50a302d6 0x00 mstore
-        0x04 0x1c revert
+        0x04 [TWENTY_EIGHT] revert
     
     transfer_failed_revert:
         // cast sig TSender__TransferFailed()
         0xfa10ea06 0x00 mstore
-        0x04 0x1c revert
+        0x04 [TWENTY_EIGHT] revert
     
     total_doesnt_add_up:
         // cast sig TSender__TotalDoesntAddUp()
         0x63b62563 0x00 mstore
-        0x04 0x1c revert
+        0x04 [TWENTY_EIGHT] revert
     
     end_call:
-        [TOTAL_AMOUNT_OFFSET] mload 
+        // Check if the totals match
+        [TOTAL_AMOUNT_OFFSET] calldataload 
         [ADDED_AMOUNT_MEMORY_LOCATION] mload eq iszero total_doesnt_add_up jumpi
     stop
 }
