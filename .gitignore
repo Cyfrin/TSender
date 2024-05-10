@@ -20,3 +20,5 @@ zkout/
 .DS_Store
 
 opcode-research/
+
+.zksolc-libraries-cache/
