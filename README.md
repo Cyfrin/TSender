@@ -8,6 +8,7 @@
     - [Vs GasliteDrop](#vs-gaslitedrop)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
+    - [foundry-zksync](#foundry-zksync)
   - [Installation](#installation)
   - [Quickstart / Usage](#quickstart--usage)
     - [Testing](#testing)
@@ -58,10 +59,12 @@ Since our implementation adds more checks, the Huff code is actually slightly *l
   - You'll know you did it right if you can run `git --version` and you see a response like `git version x.x.x`
 - [foundry](https://getfoundry.sh/)
   - You'll know you did it right if you can run `forge --version` and you see a response like `forge 0.2.0 (816e00b 2023-03-16T00:05:26.396218Z)`
-- [foundry-zksync](https://github.com/matter-labs/foundry-zksync)
-  - You'll know you did it right if you can run `forge --version` and you see a response like `forge 0.0.2 (816e00b 2023-03-16T00:05:26.396218Z)`
 - [halmos](https://github.com/a16z/halmos)
   - You'll know you've done it right if you can run `halmos --version` and you see a response like `Halmos 0.1.12`
+
+### foundry-zksync
+
+When we work with zksync, we plan to use [foundry-zksync](https://github.com/matter-labs/foundry-zksync). You'll know you did it right if you can run `forge --version` and you see a response like `forge 0.0.2 (816e00b 2023-03-16T00:05:26.396218Z)`. At the moment, it doesn't play nicely with Huff, so when we go to build with zksync, we remove all the Huff related code. 
 
 ## Installation
 

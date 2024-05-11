@@ -42,6 +42,6 @@ scopefile :; @tree ./src/ | sed 's/└/#/g' | awk -F '── ' '!/\.sol$$/ { pat
 
 scope :; tree ./src/ | sed 's/└/#/g; s/──/--/g; s/├/#/g; s/│ /|/g; s/│/|/g'
 
-deployYul :; forge script script/DeployYul.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
+deployyul :; forge script script/DeployYul.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
 
-deployHuff :; forge script script/DeployHuff.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
+deployhuff :; forge script script/DeployHuff.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
