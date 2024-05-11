@@ -46,29 +46,29 @@ contract TSenderReference is ITSender {
         }
     }
 
-    /* 
-     * @param recipients The addresses of the users to receive the airdrop
-     * @param amounts The amounts of ETH to be airdropped to each user
-     * @param totalAmount The total amount of ETH to be airdropped
-     * 
-     */
-    function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
-        external
-        payable
-    {
-        if (recipients.length != amounts.length) {
-            revert TSender__LengthsDontMatch();
-        }
-        uint256 actualTotal;
-        for (uint256 i; i < recipients.length; i++) {
-            actualTotal += amounts[i];
-            (bool succ,) = payable(recipients[i]).call{value: amounts[i]}("");
-            if (!succ) {
-                revert TSender__TransferFailed();
-            }
-        }
-        if (actualTotal != totalAmount) {
-            revert TSender__TotalDoesntAddUp();
-        }
-    }
+    // /*
+    //  * @param recipients The addresses of the users to receive the airdrop
+    //  * @param amounts The amounts of ETH to be airdropped to each user
+    //  * @param totalAmount The total amount of ETH to be airdropped
+    //  *
+    //  */
+    // function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
+    //     external
+    //     payable
+    // {
+    //     if (recipients.length != amounts.length) {
+    //         revert TSender__LengthsDontMatch();
+    //     }
+    //     uint256 actualTotal;
+    //     for (uint256 i; i < recipients.length; i++) {
+    //         actualTotal += amounts[i];
+    //         (bool succ,) = payable(recipients[i]).call{value: amounts[i]}("");
+    //         if (!succ) {
+    //             revert TSender__TransferFailed();
+    //         }
+    //     }
+    //     if (actualTotal != totalAmount) {
+    //         revert TSender__TotalDoesntAddUp();
+    //     }
+    // }
 }
