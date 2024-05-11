@@ -12,7 +12,11 @@ contract GasliteTest is Base_Test {
         mockERC20 = new MockERC20();
     }
 
-    function test_airDropErc20ThrowsErrorWhenLengthsDontMatch() public pure override {
+    function test_airDropErc20ThrowsErrorWhenLengthsDontMatch(
+        uint16, /*recipientsNumberCapped*/
+        uint16, /*amountsNumberCapped*/
+        address /*sender*/
+    ) public pure override {
         assertEq(true, true);
     }
 

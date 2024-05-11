@@ -16,7 +16,6 @@
 /* Constants */ 
 #define constant TWENTY_EIGHT = 0x1c
 
-
 /* Methods */
 // cast sig "airdropERC20(address,address[],uint256[],uint256)"
 // 0x82947abe
@@ -56,18 +55,15 @@
     // Function selector starts on the bottom of the stack
     [NUMBER_OF_RECIPIENTS_OFFSET]                // [0x84]
     calldataload                                 // [recipients.length]
-    dup1                                         // [recipients.length, recipients.length]
-    0x20                                         // [0x20, recipients.length, recipients.length]
-    mul                                          // [recipients.length * 32, recipients.length]
-    [NUMBER_OF_RECIPIENTS_OFFSET]                // [0xa4, recipients.length * 32, recipients.length]
-    0x20                                         // [0x20, 0xa4, recipients.length * 32, recipients.length]
-    add                                          // [0xa4 + 0x20, recipients.length * 32, recipients.length]
-    add                                          // [number_of_amounts_offset, recipients.length]
+    0x20                                         // [0x20, recipients.length]
+    mul                                          // [recipients.length * 32]
+    [RECIPIENT_ONE_OFFSET]                       // [recipient_one_offset, recipients.length * 32]
+    add                                          // [number_of_amounts_offset]
 
-    dup1                                         // [number_of_amounts_offset, number_of_amounts_offset, recipients.length]
-    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION]   // [0x180, number_of_amounts_offset, recipients.length]
-    mstore                                       // [number_of_amounts_offset, recipients.length]   
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION]   // [number_of_amounts_offset_memory_location, number_of_amounts_offset, number_of_amounts_offset]
+    mstore                                       // []   
 
+    // Function selector is technically still on the bottom of the stack
     // transferFrom(msg.sender, address(this), amount)
     // This next line will result in memory looking like this:
     // 0x0000000000000000000000000000000000000000000000000000000023b872dd
@@ -111,42 +107,41 @@
     // let diff := sub(recipients.offset, amounts.offset)
     // remember, our number of amounts is stored in memory, not statically
     [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub    // [diff, token_address]
-    [RECIPIENT_ONE_OFFSET]                                                                // [address_offset, diff, token_address]
 
     // let end := add(recipients.offset, shl(5, recipients.length))
     // recipients.length
     [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
     // add(recipients.offset, shl(5
-    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                     // [end, address_offset, diff, token_address]
-    
-    loop_start:
-        dup1                                                                                                     // [end, end, address_offset, diff, token_address] 
-        dup3                                                                                                     // [address_offset, end, end, address_offset, diff, token_address]   
-        dup5                                                                                                     // [diff, address_offset, end, end, address_offset, diff, token_address]
+    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                                           // [end, diff, token_address]
+    [RECIPIENT_ONE_OFFSET]                                                                                       // [address_offset, end, diff, token_address]
 
+    loop_start:
+        dup3                                                // [diff, address_offset, end, diff, token_address]                        
         // To address, and setting up to use addressOffset later
-        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, end, address_offset, diff, token_address]                    
-        calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore                                                        // [address_offset, diff, address_offset, end, end, address_offset, diff, token_address]  
+        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address]                    
+        calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore                                                        // [address_offset, diff, address_offset, end, diff, token_address]  
         // Amount
-        sub calldataload [AMOUNT_MEMORY_LOCATION] mstore                                                        // [address_offset, end, end,  address_offset, diff, token_address]                                                             
+        sub calldataload [AMOUNT_MEMORY_LOCATION] mstore                                                        // [address_offset, end, diff, token_address]                                                             
         
         // call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)
-        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 dup11 gas call                                                       // [success, address_offset, end, end, address_offset, diff, token_address]
-        transfer_didnt_fail jumpi                                                                               // [address_offset, end, end, address_offset, diff, token_address]
+        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 dup9 gas call                                                        // [success, address_offset, end, diff, token_address]
+        transfer_didnt_fail jumpi                                                                               // [address_offset, end, diff, token_address]
             // cast sig TSender__TransferFailed()
             0xfa10ea06 0x00 mstore
             0x04 [TWENTY_EIGHT] revert
 
         // increment the address offset
         transfer_didnt_fail:
-        0x20 add                                                                                                 // [0x20 + address_offset, end, end, address_offset, diff, token_address]
-        dup1                                                                                                     // [0x20 + address_offset, 0x20 + address_offset, end, end, address_offset, diff, token_address]
-        swap4                                                                                                    // [address_offset(old_address_offset), 0x20 + address_offset, end, end, 0x20 + address_offset, diff, token_address]
-        pop                                                                                                      // [0x20 + address_offset, end, end, 0x20 + address_offset, diff, token_address]
+        // [(old) address_offset, end, diff, token_address]
 
+        0x20 add                                                                                                 // [(new) address_offset, end, diff, token_address]
+        dup2 dup2                                                                                                // [address_offset, end, address_offset, end, diff, token_address]                 
+        
         // if addressOffset >= end, jump to end
         // if iszero(lt(addressOffset, end)) { break }
-        lt loop_start jumpi                                                                                 // [end, address_offset, diff, token_address]
+        // should be comparing // [(new) address_offset, end]
+        lt loop_start jumpi                                                                                     // [(new) address_offset, end, diff, token_address]                                                                       
+        // target [address_offset, end, diff, token_address]
     stop
 }
 
