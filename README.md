@@ -26,7 +26,7 @@ Hyper gas efficient smart contracts for air dropping tokens to a large number of
 
 
 ## Future (Huff) gas optimization
-- Use more `DUP1` opcodes to load calldata instead of `PUSHX CALLDATALOAD` everywhere
+- Turn `NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION` into a stack variable
 
 # Gas Comparisons
 ## Vs GasliteDrop
