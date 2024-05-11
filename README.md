@@ -50,8 +50,6 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 ### Vs GasliteDrop
 Since our implementation adds more checks, the Huff code is actually slightly *less* gas efficient, but it is a safer smart contract. However, we did include a Huff contract the did not include those checks to show the power of using Huff to reduce gas costs.
 
-
-
 # Getting Started
 
 ## Requirements 
