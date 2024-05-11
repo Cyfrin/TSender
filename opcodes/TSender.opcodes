@@ -136,6 +136,7 @@ SUB
 PUSH0
 DUP8
 
+// for { let addressOffset := recipients.offset } 1 {} {
 // idk
 JUMPDEST
 PUSH1 0x1
