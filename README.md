@@ -1,11 +1,16 @@
 # TSender
 
+## Percent Gas Efficiency Improvement vs Solidity
+<p align="center">
+<img src="./img/gas-vs-1.png" width="500" alt="gas-vs-1.png">
+<br/>
+
 - [TSender](#tsender)
+  - [Percent Gas Efficiency Improvement vs Solidity](#percent-gas-efficiency-improvement-vs-solidity)
 - [About](#about)
   - [TSender Features](#tsender-features)
   - [GasliteDrop Comparison](#gaslitedrop-comparison)
   - [Gas Comparisons](#gas-comparisons)
-    - [Vs GasliteDrop](#vs-gaslitedrop)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
     - [foundry-zksync](#foundry-zksync)
@@ -48,8 +53,20 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 2. The `TSender_NoCheck.huff` does not have the extra checks, but is just a gas optimized version of the original GasliteDrop contract.
 
 ## Gas Comparisons
-### Vs GasliteDrop
-Since our implementation adds more checks, the Huff code is actually slightly *less* gas efficient, but it is a safer smart contract. However, we did include a Huff contract the did not include those checks to show the power of using Huff to reduce gas costs.
+
+> Note: Since our implementation adds more checks, the Huff code is slightly *less* gas efficient when working with additional recipients than the original gaslite codebase, but it is a safer smart contract. However, we did include a Huff contract the did not include those checks to show the power of using Huff to reduce gas costs.
+
+Efficiency Improvement vs Solidity					
+| Project                | 1 Recipient | 10 Recipients | 100 Recipients | 1000 Recipients | Mean Gas Improvement |
+| ---------------------- | ----------- | ------------- | -------------- | --------------- | -------------------- |
+| TSender - Yul          | 1.80%       | 2.53%         | 2.69%          | 2.71%           | 2.43%                |
+| Gaslite                | 1.82%       | 2.59%         | 2.76%          | 2.78%           | 2.49%                |
+| TSender - Huff         | 3.04%       | 2.79%         | 2.73%          | 2.73%           | 2.83%                |
+| TSender - Huff_NoCheck | 3.20%       | 2.86%         | 2.79%          | 2.79%           | 2.91%                |
+
+<p align="center">
+<img src="./img/gas-vs-1000.png" width="500" alt="gas-vs-1000.png">
+<br/>
 
 # Getting Started
 
@@ -68,7 +85,7 @@ When we work with zksync, we plan to use [foundry-zksync](https://github.com/mat
 
 ## Installation
 
-```
+```bash
 git clone https://github.com/cyfrin/tsender
 cd tsender
 make
@@ -76,16 +93,16 @@ make
 
 ## Quickstart / Usage
 
-
 ### Testing
 
-To test the codebase, you can run the following 3 commands:
+To test the codebase, you can run the following 2 commands:
 
 ```bash
 make test
-make zktest
 make halmos
 ```
+
+When working with `foundry-zksync`, you may run `make zktest`, or add `--zksync` to the end of all `forge` commands. 
 
 #### Why no stateful fuzz tests?
 
@@ -140,7 +157,6 @@ We expect to be able to run our deploy scripts, and it will prevent us from depl
   - `TSender.huff`
 - zkSync:
   - `TSender.sol`
-
 
 ## Notes
 - There is an issue with how quickly the `foundry-zksync` compiler works, so we avoid compiling the `DeployHuff.s.sol` contract. 
