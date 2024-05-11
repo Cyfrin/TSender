@@ -11,6 +11,8 @@
   - [TSender Features](#tsender-features)
   - [GasliteDrop Comparison](#gaslitedrop-comparison)
   - [Gas Comparisons](#gas-comparisons)
+    - [Efficiency Improvement vs Solidity](#efficiency-improvement-vs-solidity)
+    - [Actual Gas Costs](#actual-gas-costs)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
     - [foundry-zksync](#foundry-zksync)
@@ -56,13 +58,23 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 
 > Note: Since our implementation adds more checks, the Huff code is slightly *less* gas efficient when working with additional recipients than the original gaslite codebase, but it is a safer smart contract. However, we did include a Huff contract the did not include those checks to show the power of using Huff to reduce gas costs.
 
-Efficiency Improvement vs Solidity					
+### Efficiency Improvement vs Solidity					
 | Project                | 1 Recipient | 10 Recipients | 100 Recipients | 1000 Recipients | Mean Gas Improvement |
 | ---------------------- | ----------- | ------------- | -------------- | --------------- | -------------------- |
 | TSender - Yul          | 1.80%       | 2.53%         | 2.69%          | 2.71%           | 2.43%                |
 | Gaslite                | 1.82%       | 2.59%         | 2.76%          | 2.78%           | 2.49%                |
 | TSender - Huff         | 3.04%       | 2.79%         | 2.73%          | 2.73%           | 2.83%                |
 | TSender - Huff_NoCheck | 3.20%       | 2.86%         | 2.79%          | 2.79%           | 2.91%                |
+
+
+### Actual Gas Costs
+
+|                      | Solidity | Yul      | Gaslite  | Huff     | Huff, no check |
+| -------------------- | -------- | -------- | -------- | -------- | -------------- |
+| 1 Recipient Drop     | 57176    | 56167    | 56156    | 55487    | 55402          |
+| 10 Recipient Drops   | 293772   | 286517   | 286353   | 285801   | 285590         |
+| 100 Recipient Drops  | 2659963  | 2590226  | 2588532  | 2589150  | 2587679        |
+| 1000 Recipient Drops | 26344485 | 25648190 | 25631196 | 25643514 | 25629443       |
 
 <p align="center">
 <img src="./img/gas-vs-1000.png" width="500" alt="gas-vs-1000.png">
