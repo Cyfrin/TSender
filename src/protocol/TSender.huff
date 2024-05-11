@@ -5,11 +5,10 @@
 /* Memory Locations */
 #define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
 #define constant AMOUNT_MEMORY_LOCATION = 0x40
-#define constant END_MEMORY_LOCATION = 0x100
-#define constant DIFF_MEMORY_LOCATION = 0x120
-#define constant ADDED_AMOUNT_MEMORY_LOCATION = 0x140
-#define constant ADDRESS_OFFSET_MEMORY_LOCATION = 0x160
-#define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION = 0x180
+#define constant END_MEMORY_LOCATION = 0x60
+#define constant ADDED_AMOUNT_MEMORY_LOCATION = 0x80
+#define constant ADDRESS_OFFSET_MEMORY_LOCATION =  0xa0
+#define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION = 0xc4
 
 /* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
@@ -109,47 +108,47 @@
     // transfer(address,amount)
     // This next line setups up memory to look like this:
     // 0x00000000000000000000000000000000000000000000000000000000a9059cbb 
-    0xa9059cbb 0x00 mstore           
+    0xa9059cbb 0x00 mstore        
+
+    // let diff := sub(recipients.offset, amounts.offset)
+    // remember, our number of amounts is stored in memory, not statically
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub    // [diff]
+
     // let end := add(recipients.offset, shl(5, recipients.length))
     // recipients.length
     [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
     // add(recipients.offset, shl(5
-    0x5 shl [RECIPIENT_ONE_OFFSET] add 
-    // stick it in some crazy spot in memory
-    [END_MEMORY_LOCATION] mstore
-
-    // let diff := sub(recipients.offset, amounts.offset)
-    // remember, our number of amounts is stored in memory, not statically
-    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub
-    [DIFF_MEMORY_LOCATION] mstore
-
-    // let addressOffset := recipients.offset
-    [RECIPIENT_ONE_OFFSET] [ADDRESS_OFFSET_MEMORY_LOCATION] mstore 
-
-    // 0x0de0b6b3a7640000
-    // 
+    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                     // [end, diff]
+    
+    // let addressOffset := recipients.offset                                              
+    [RECIPIENT_ONE_OFFSET] [ADDRESS_OFFSET_MEMORY_LOCATION] mstore                         // [end, diff]                   
 
     loop_start:
-        // to address
-        [ADDRESS_OFFSET_MEMORY_LOCATION] mload calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore      // it doesn't matter where we store this in memory as long as we don't overwrite 
-        // amount 
-        // mstore(0x24, calldataload(sub(addressOffset, diff)))
-        [DIFF_MEMORY_LOCATION] mload 
-        [ADDRESS_OFFSET_MEMORY_LOCATION] mload
-        sub calldataload [AMOUNT_MEMORY_LOCATION] mstore                                                                // it doesn't matter where we store this in memory as long as we don't overwrite
+        dup1
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mload                                                                   // [address_offset, end, end, diff]   
+        dup4                                                                                                     // [diff, address_offset, end, end, diff]
+
+        // to address, and setting up to use addressOffset later
+        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, end, diff]                    
+        calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore                                                        // [address_offset, diff, address_offset, end, end, diff]  
+        sub calldataload dup1 [AMOUNT_MEMORY_LOCATION] mstore                                                   // [amount, address_offset, end, diff]                                                             
         // addedAmount := add(addedAmount, mload(0x24))
-        [AMOUNT_MEMORY_LOCATION] mload [ADDED_AMOUNT_MEMORY_LOCATION] mload add 
-        [ADDED_AMOUNT_MEMORY_LOCATION] mstore
+        [ADDED_AMOUNT_MEMORY_LOCATION] mload add                                                                // [amount + oldAddedAmount, address_offset, end, end, diff]
+        [ADDED_AMOUNT_MEMORY_LOCATION] mstore                                                                   // [address_offset, end, end, diff]
 
         // call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)
-        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 [TOKEN_ADDRESS_OFFSET] calldataload gas call 
-        iszero transfer_failed_revert jumpi
+        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 [TOKEN_ADDRESS_OFFSET] calldataload gas call                         // [success, address_offset, end, end, diff]
+        iszero transfer_failed_revert jumpi                                                                     // [address_offset, end, end, diff]
 
         // increment the address offset
-        [ADDRESS_OFFSET_MEMORY_LOCATION] mload 0x20 add [ADDRESS_OFFSET_MEMORY_LOCATION] mstore
+        0x20 add                                                                                                 // [0x20 + address_offset, end, end, diff]
+        dup1                                                                                                     // [0x20 + address_offset, 0x20 + address_offset, end, end, diff]
+        [ADDRESS_OFFSET_MEMORY_LOCATION] mstore                                                                  // [0x20 + address_offset, end, end, diff]
+
         // if addressOffset >= end, jump to end
         // if iszero(lt(addressOffset, end)) { break }
-        [END_MEMORY_LOCATION] mload [ADDRESS_OFFSET_MEMORY_LOCATION] mload lt iszero end_call jumpi
+        lt iszero end_call jumpi                                                                                 // [end, diff]
+
 
         // Restart loop
         // Is there a scenario where this is an infinite loop?

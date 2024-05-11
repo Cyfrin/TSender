@@ -1,27 +1,28 @@
-// free memory pointer
-PUSH1 0x80
-PUSH1 0x40
-MSTORE
+@ Contract deployment
+@ // free memory pointer
+@ PUSH1 0x80
+@ PUSH1 0x40
+@ MSTORE
 
-// Checks & Contract Deployment
-CALLVALUE
-DUP1
-ISZERO
-PUSH2 0xF
-JUMPI
-PUSH0
-DUP1
-REVERT
-JUMPDEST
-POP
-PUSH2 0x34F
-DUP1
-PUSH2 0x1D
-PUSH0
-CODECOPY
-PUSH0
-RETURN
-INVALID
+@ // Checks & Contract Deployment
+@ CALLVALUE
+@ DUP1
+@ ISZERO
+@ PUSH2 0xF
+@ JUMPI
+@ PUSH0
+@ DUP1
+@ REVERT
+@ JUMPDEST
+@ POP
+@ PUSH2 0x34F
+@ DUP1
+@ PUSH2 0x1D
+@ PUSH0
+@ CODECOPY
+@ PUSH0
+@ RETURN
+@ INVALID
 
 // Contract Code
 // Memory pointer
@@ -115,38 +116,54 @@ PUSH1 0x4
 PUSH1 0x1C
 REVERT
 JUMPDEST
+
+@ mstore(0x00, hex"a9059cbb")
 PUSH32 0xA9059CBB00000000000000000000000000000000000000000000000000000000
 PUSH0
 MSTORE
+
+@ let end := add(recipients.offset, shl(5, recipients.length))
 DUP4
 PUSH1 0x5
 SHL
 DUP6
 ADD
+
+@ let diff := sub(recipients.offset, amounts.offset)
 DUP4
 DUP7
 SUB
 PUSH0
 DUP8
+
+// idk
 JUMPDEST
 PUSH1 0x1
 ISZERO
 PUSH2 0x10B
 JUMPI
+
+@ mstore(0x04, calldataload(addressOffset))
 DUP1
 CALLDATALOAD
 PUSH1 0x4
 MSTORE
+
+@ mstore(0x24, calldataload(sub(addressOffset, diff)))
 DUP3
 DUP2
 SUB
 CALLDATALOAD
 PUSH1 0x24
 MSTORE
+
+@ addedAmount := add(addedAmount, mload(0x24))
 PUSH1 0x24
 MLOAD
 DUP3
 ADD
+
+@ if iszero(call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)) {
 SWAP2
 POP
 PUSH0
@@ -159,16 +176,23 @@ GAS
 CALL
 PUSH2 0xFD
 JUMPI
+
+@  mstore(0x00, 0xfa10ea06)
 PUSH4 0xFA10EA06
 PUSH0
 MSTORE
+@ revert(0x1c, 0x04)
 PUSH1 0x4
 PUSH1 0x1C
 REVERT
+
+@ addressOffset := add(addressOffset, 0x20)
 JUMPDEST
 PUSH1 0x20
 DUP2
 ADD
+
+@ if iszero(lt(addressOffset, end)) { break }
 SWAP1
 POP
 DUP4
@@ -176,6 +200,8 @@ DUP2
 LT
 PUSH2 0xC9
 JUMPI
+
+
 JUMPDEST
 POP
 DUP4
@@ -542,19 +568,19 @@ SWAP6
 JUMP
 
 
-// Metadata
-INVALID
-LOG2
-PUSH5 0x6970667358
-0x22
-SLT
-KECCAK256
-PUSH18 0x1878C936FCCD3976EBE8B403FAAC6DE377D9
-PUSH11 0x7374967A2E9D0C0775B75F
-0x2E
-PUSH5 0x736F6C6343
-STOP
-ADDMOD
-XOR
-STOP
-CALLER
+@ // Metadata
+@ INVALID
+@ LOG2
+@ PUSH5 0x6970667358
+@ 0x22
+@ SLT
+@ KECCAK256
+@ PUSH18 0x1878C936FCCD3976EBE8B403FAAC6DE377D9
+@ PUSH11 0x7374967A2E9D0C0775B75F
+@ 0x2E
+@ PUSH5 0x736F6C6343
+@ STOP
+@ ADDMOD
+@ XOR
+@ STOP
+@ CALLER
