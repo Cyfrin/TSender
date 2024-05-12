@@ -10,6 +10,8 @@ import {MockFalseTransferFromERC20} from "test/mocks/MockFalseTransferFromERC20.
 import {console2} from "forge-std/console2.sol";
 
 contract Base_Test is Test {
+    error ERC20InvalidReceiver(address receiver);
+
     ITSender public tSender;
     MockERC20 public mockERC20;
     uint256 public constant ONE = 1e18;
@@ -21,6 +23,39 @@ contract Base_Test is Test {
         tSender = ITSender(address(senderReference));
         mockERC20 = new MockERC20();
     }
+
+    // function test_fuzzNumberOfRecipients(address[] calldata recipients, uint32[] calldata amounts, address sender) public {
+    //     vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
+    //     vm.assume(recipients.length == amounts.length);
+
+
+    //     // Calculate total amount
+    //     uint256 totalAmount = 0;
+    //     uint256[] memory allAmounts = new uint256[](recipients.length);
+    //     for (uint256 i = 0; i < recipients.length; i++) {
+    //         totalAmount += amounts[i];
+    //         allAmounts[i] = uint256(amounts[i]);
+    //     }
+
+    //     // Arrange
+    //     vm.startPrank(sender);
+    //     mockERC20.mint(totalAmount);
+    //     mockERC20.approve(address(tSender), totalAmount);
+    //     vm.stopPrank();
+
+    //     // Act
+    //     vm.prank(sender);
+    //     uint256 startingGas = gasleft();
+    //     tSender.airdropERC20(address(mockERC20), recipients, allAmounts, uint256(totalAmount));
+    //     uint256 gasUsed = startingGas - gasleft();
+    //     console2.log("Gas used", gasUsed);
+
+    //     // Assert
+    //     assertEq(sender.balance, 0, "Sender balance is not correct");
+    //     // for (uint256 i = 0; i < recipients.length; i++) {
+    //     //     assertEq(mockERC20.balanceOf(recipients[i]), allAmounts[i], "Recipient balance is not correct");
+    //     // }
+    // }
 
     function test_airDropErc20ToSingleFuzz(uint128 amount, address sender) public {
         vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
@@ -45,6 +80,26 @@ contract Base_Test is Test {
 
         // Assert
         assertEq(mockERC20.balanceOf(recipientOne), uint256(amount));
+    }
+
+    function test_airDropErc20ToSingleZeroAddress(uint128 amount, address sender) public {
+        vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
+
+        // Arrange
+        vm.startPrank(sender);
+        mockERC20.mint(uint256(amount));
+        mockERC20.approve(address(tSender), uint256(amount));
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = address(0);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = uint256(amount);
+
+        // Act
+        vm.prank(sender);
+        vm.expectRevert(abi.encodeWithSelector(ERC20InvalidReceiver.selector, address(0)));
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, uint256(amount));
     }
 
     // We set amount to a uint128 to not run into overflows
