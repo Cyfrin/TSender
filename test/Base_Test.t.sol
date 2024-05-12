@@ -156,8 +156,6 @@ contract Base_Test is Test {
         assertEq(mockERC20.balanceOf(recipientOne), uint256(amount));
     }
 
-
-
     // We set amount to a uint128 to not run into overflows
     function test_airDropErc20ToMany(uint128 amount, address sender) public {
         vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
