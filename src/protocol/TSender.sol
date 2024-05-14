@@ -18,6 +18,15 @@ contract TSender {
      * @param recipients - the addresses to airdrop to
      * @param amounts - the amounts to airdrop to each address
      * @param totalAmount - the total amount to airdrop
+     *
+     * This function additionally has the following checks:
+     * - Checks for ETH being sent
+     * - Checks for zero address recipients
+     * - Checks for ERC20 transfer and transferFrom fails
+     *
+     * It does not check for the following:
+     * - Duplicate addresses
+     * - Bool returns for transfer and/or transferFrom
      */
     function airdropERC20(
         address tokenAddress,
@@ -59,15 +68,22 @@ contract TSender {
             // Checking totals at the end
             let addedAmount := 0
             for { let addressOffset := recipients.offset } 1 {} {
+                let recipient := calldataload(addressOffset)
+
+                // Check to address
+                if iszero(recipient) {
+                    mstore(0x00, 0x1647bca2) // cast sig "TSender__ZeroAddress()"
+                    revert(0x1c, 0x04)
+                }
+
                 // to address
-                mstore(0x04, calldataload(addressOffset))
+                mstore(0x04, recipient)
                 // amount
                 mstore(0x24, calldataload(sub(addressOffset, diff)))
                 // Keep track of the total amount
                 addedAmount := add(addedAmount, mload(0x24))
 
                 // transfer the tokens
-                // q why did vectorized do 0x68 instead of what we are doing 0x44?
                 if iszero(call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)) {
                     mstore(0x00, 0xfa10ea06) // cast sig "TSender__TransferFailed()"
                     revert(0x1c, 0x04)
@@ -85,5 +101,31 @@ contract TSender {
                 revert(0x1c, 0x04)
             }
         }
+    }
+
+    /**
+     * @dev We don't need to make this function gas optimized since we call it only as a pure function.
+     * @notice This function is meant to be used to check if the contract is a valid TSender contract
+     * @notice It will check for:
+     *  - Duplicate addresses
+     *  - Zero Addresses
+     * @param recipients The list of addresses to check
+     * @return bool
+     */
+    function isValidRecipientsList(address[] calldata recipients) external pure returns (bool) {
+        if (recipients.length == 0) {
+            return false;
+        }
+        for (uint256 i; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) {
+                return false;
+            }
+            for (uint256 j = i + 1; j < recipients.length; j++) {
+                if (recipients[i] == recipients[j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

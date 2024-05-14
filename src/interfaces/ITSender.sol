@@ -9,7 +9,5 @@ interface ITSender {
         uint256 totalAmount
     ) external;
 
-    // function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
-    //     external
-    //     payable;
+    function isValidRecipientsList(address[] calldata recipients) external view returns (bool);
 }

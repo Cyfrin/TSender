@@ -15,13 +15,14 @@ contract TSenderReference is ITSender {
     error TSender__TotalDoesntAddUp();
     error TSender__LengthsDontMatch();
     error TSender__TransferFailed();
+    error TSender__ZeroAddress();
 
-    /* 
+    /**
+     * @notice This function is meant to be used to airdrop ERC20 tokens to a list of users
      * @param tokenAddress The address of the ERC20 token to be airdropped
-     * @param users The addresses of the users to receive the airdrop
+     * @param recipients The addresses of the users to receive the airdrop
      * @param amounts The amounts of tokens to be airdropped to each user
      * @param totalAmount The total amount of tokens to be airdropped
-     * 
      */
     function airdropERC20(
         address tokenAddress,
@@ -39,6 +40,9 @@ contract TSenderReference is ITSender {
         }
         for (uint256 i; i < recipients.length; i++) {
             actualTotal += amounts[i];
+            if (recipients[i] == address(0)) {
+                revert TSender__ZeroAddress();
+            }
             IERC20(tokenAddress).transfer(recipients[i], amounts[i]);
         }
         if (actualTotal != totalAmount) {
@@ -46,29 +50,28 @@ contract TSenderReference is ITSender {
         }
     }
 
-    // /*
-    //  * @param recipients The addresses of the users to receive the airdrop
-    //  * @param amounts The amounts of ETH to be airdropped to each user
-    //  * @param totalAmount The total amount of ETH to be airdropped
-    //  *
-    //  */
-    // function airdropETH(address[] calldata recipients, uint256[] calldata amounts, uint256 totalAmount)
-    //     external
-    //     payable
-    // {
-    //     if (recipients.length != amounts.length) {
-    //         revert TSender__LengthsDontMatch();
-    //     }
-    //     uint256 actualTotal;
-    //     for (uint256 i; i < recipients.length; i++) {
-    //         actualTotal += amounts[i];
-    //         (bool succ,) = payable(recipients[i]).call{value: amounts[i]}("");
-    //         if (!succ) {
-    //             revert TSender__TransferFailed();
-    //         }
-    //     }
-    //     if (actualTotal != totalAmount) {
-    //         revert TSender__TotalDoesntAddUp();
-    //     }
-    // }
+    /**
+     * @notice This function is meant to be used to check if the contract is a valid TSender contract
+     * @notice It will check for:
+     *  - Duplicate addresses
+     *  - Zero Addresses
+     * @param recipients The list of addresses to check
+     * @return bool
+     */
+    function isValidRecipientsList(address[] calldata recipients) external pure returns (bool) {
+        if (recipients.length == 0) {
+            return false;
+        }
+        for (uint256 i; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) {
+                return false;
+            }
+            for (uint256 j = i + 1; j < recipients.length; j++) {
+                if (recipients[i] == recipients[j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

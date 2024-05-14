@@ -46,6 +46,12 @@ Each contract has exactly 1 function:
 - Checks the `totalAmount` parameter matches the sum of the `amounts` array
 - Doesn't allow ETH to be sent with function calls
 - Makes sure the total lengths of the `amounts` array and `recipients` array are the same
+- Checks for zero address recipients 
+
+Additionally, we did not want to spend gas checking for zero address `recipients`, so we added a function called `isValidRecipientsList` to check for:
+- Duplicate addresses
+- Zero address sends 
+- There is at least 1 recipient
 
 ## GasliteDrop Comparison
 

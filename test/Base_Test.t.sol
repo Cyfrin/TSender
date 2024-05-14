@@ -9,7 +9,7 @@ import {MockFalseTransferFromERC20} from "test/mocks/MockFalseTransferFromERC20.
 import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract Base_Test is Test {
+abstract contract Base_Test is Test {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     ITSender public tSender;
@@ -27,7 +27,10 @@ contract Base_Test is Test {
     }
 
     // Remove duplicates from an array of addresses
-    function _removeSpecialAddessesAndDuplicates(address[] memory recipients, address sender) private returns (address[] memory uniqueRecipients) {
+    function _removeSpecialAddessesAndDuplicates(address[] memory recipients, address sender)
+        private
+        returns (address[] memory uniqueRecipients)
+    {
         for (uint256 i = 0; i < recipients.length; i++) {
             // Remove zero addresses
             if (recipients[i] == address(0)) {
@@ -40,6 +43,8 @@ contract Base_Test is Test {
             recipientSet.add(recipients[i]);
         }
         uniqueRecipients = new address[](recipientSet.length());
+        vm.assume(uniqueRecipients.length > 0);
+
         for (uint256 i = 0; i < recipientSet.length(); i++) {
             uniqueRecipients[i] = recipientSet.at(i);
         }
@@ -49,7 +54,9 @@ contract Base_Test is Test {
     // This test fuzzes the number of recipients and amounts
     // It assumes that the length is the same for both arrays
     // It also removes duplicates and special addresses from the recipients array
-    function test_fuzzNumberOfRecipients(address[] calldata recipients, uint32[] calldata amounts, address sender) public {
+    function test_fuzzNumberOfRecipients(address[] calldata recipients, uint32[] calldata amounts, address sender)
+        public
+    {
         vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
         vm.assume(recipients.length == amounts.length);
 
@@ -86,7 +93,8 @@ contract Base_Test is Test {
     }
 
     // Test that the contract reverts if there are duplicates in the recipients list
-    function test_duplicatesRevert() public {
+    // ONLY by using the isValidRecipientsList function
+    function test_isValidRecipientsReturnsFalseOnDuplicates() public virtual {
         address sender = makeAddr("sender");
         uint256 amount = 123;
         // Arrange
@@ -97,21 +105,65 @@ contract Base_Test is Test {
         mockERC20.approve(address(tSender), expectedTotalAmount);
         vm.stopPrank();
 
-        address[] memory recipients = new address[](2);
+        address[] memory recipients = new address[](5);
         recipients[0] = sender;
-        recipients[1] = sender;
-        uint256[] memory amounts = new uint256[](2);
+        recipients[1] = address(5);
+        recipients[2] = address(6);
+        recipients[3] = sender;
+        recipients[4] = address(7);
+
+        uint256[] memory amounts = new uint256[](5);
         amounts[0] = amount;
         amounts[1] = amount;
+        amounts[2] = amount;
+        amounts[3] = amount;
+        amounts[4] = amount;
 
         // Act
-        vm.prank(sender);
-        vm.expectRevert();
-        tSender.airdropERC20(address(mockERC20), recipients, amounts, expectedTotalAmount);
+        bool isValidList = tSender.isValidRecipientsList(recipients);
+        assert(!isValidList);
+    }
+
+    // Test that the contract reverts if there are duplicates in the recipients list
+    // ONLY by using the isValidRecipientsList function
+    function test_isValidRecipientsReturnsTrue() public virtual {
+        address sender = makeAddr("sender");
+        uint256 amount = 123;
+        // Arrange
+        uint256 expectedTotalAmount = amount * 2;
+
+        vm.startPrank(sender);
+        mockERC20.mint(expectedTotalAmount);
+        mockERC20.approve(address(tSender), expectedTotalAmount);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](5);
+        recipients[0] = sender;
+        recipients[1] = address(10);
+        recipients[2] = address(11);
+        recipients[3] = address(12);
+        recipients[4] = address(13);
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = amount;
+        amounts[1] = amount;
+        amounts[2] = amount;
+        amounts[3] = amount;
+        amounts[4] = amount;
+
+        // Act
+        bool isValidList = tSender.isValidRecipientsList(recipients);
+        assert(isValidList);
+    }
+
+    function test_zeroLengthRecipientsReturnsFalse() public virtual {
+        address[] memory recipients = new address[](0);
+        bool isValidList = tSender.isValidRecipientsList(recipients);
+        assert(!isValidList);
     }
 
     // Test that the contract reverts if there are zero addresses in the recipients list
-    function test_zeroAddressRecipientReverts(uint128 amount, address sender) public {
+    function test_zeroAddressRecipientReverts(uint128 amount, address sender) public virtual {
         vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
 
         // Arrange
@@ -264,6 +316,17 @@ contract Base_Test is Test {
         // Act
         vm.deal(address(this), amount);
         (bool succ,) = address(tSender).call{value: amount}(data);
+        assertEq(succ, false);
+    }
+
+    function test_revertsWhenNoProperFunctionSelectorUsed(bytes4 selector) public virtual {
+        vm.assume(selector != TSenderReference.airdropERC20.selector);
+        vm.assume(selector != TSenderReference.isValidRecipientsList.selector);
+
+        console2.logBytes4(selector);
+        console2.logBytes(abi.encodeWithSelector(selector));
+
+        (bool succ,) = address(tSender).call(abi.encodeWithSelector(selector));
         assertEq(succ, false);
     }
 

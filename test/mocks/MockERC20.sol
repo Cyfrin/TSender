@@ -15,4 +15,15 @@ contract MockERC20 is ERC20 {
     function mint(uint256 amount) external {
         _mint(msg.sender, amount);
     }
+
+    /**
+     * @dev See {IERC20-transfer}.
+     *
+     * We remove the check on the zero address for our tests to run.
+     */
+    function transfer(address to, uint256 value) public override returns (bool) {
+        address owner = _msgSender();
+        _update(owner, to, value);
+        return true;
+    }
 }
