@@ -1,6 +1,6 @@
 /* Interface */
 #define function airdropERC20(address,address[],uint256[],uint256) nonpayable returns()
-#define function airdropETH(address[], uint256[], uint256) payable returns()
+#define function isValidRecipientsList(address[]) nonpayable returns (bool)
 
 /* Memory Locations */
 #define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
@@ -13,9 +13,11 @@
 #define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
 #define constant RECIPIENT_ONE_OFFSET = 0xa4
 
+// For isValidRecipientsList
+#define constant ADDRESS_ONE_OFFSET = 0x44
+
 /* Constants */ 
 #define constant TWENTY_EIGHT = 0x1c
-
 
 /* Methods */
 // cast sig "airdropERC20(address,address[],uint256[],uint256)"
@@ -130,9 +132,13 @@
     loop_start:
         dup3                                                                               // [diff, address_offset, end, diff, token_address, total_amount]   
         // To address, and setting up to use addressOffset later
-        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]                       
-        calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore                                                        // [address_offset, diff, address_offset, end, diff, token_address, total_amount]     
-        // Amount
+        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        calldataload                                                                                            // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        // zero address check
+        dup1 0x00 eq zero_address_to jumpi                                                                      // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        // Store to address in memory
+        [TO_ADDRESS_MEMORY_LOCATION] mstore                                                                     // [address_offset, diff, address_offset, end, diff, token_address, total_amount]     
+        // Store amount in memory
         sub calldataload dup1 [AMOUNT_MEMORY_LOCATION] mstore                                                   // [amount, address_offset, end, diff, token_address, total_amount]                                                           
         
         // addedAmount := add(addedAmount, mload(0x24))
@@ -164,10 +170,90 @@
     stop
     
     total_doesnt_add_up:
-        // cast sig TSender__TotalDoesntAddUp()
+        // cast sig "TSender__TotalDoesntAddUp():
         0x63b62563 0x00 mstore
         0x04 [TWENTY_EIGHT] revert
+    
+    zero_address_to:
+        // cast sig "TSender__ZeroAddress()"
+        0x1647bca2 0x00 mstore 
+        0x04 [TWENTY_EIGHT] revert
     stop
+}
+
+// This function is not optimized for gas
+// cast sig "isValidRecipientsList(address[])"
+// 0x9304a004
+
+// Calldata example for:
+// address[] memory recipients = new address[](5);
+// 0x9304a004
+// 0x0000000000000000000000000000000000000000000000000000000000000020 // There is 1 parameter (address[])
+// 0x0000000000000000000000000000000000000000000000000000000000000005 // There are 5 recipients
+// address 1
+// address 2
+// address 3
+// address 4
+// address 5
+#define macro IS_VALID_RECIPIENTS() = takes (0) returns (0) { 
+    0x24 calldataload // [recipients.length]
+    // check if the number of recipients is 0
+    0x00 eq return_false jumpi 
+
+    0x24 calldataload         // [recipients.length]
+    0x00                      // [outer_loop_count, recipients.length]
+    dup2 dup2                 // [outer_loop_count, recipients.length, outer_loop_count, recipients.length]
+
+    outer_loop_start:         // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+        // Break loop conditional
+        eq return_true jumpi               // [outer_loop_count, recipients.length]
+        // Check for zero address
+        dup1                               // [loop_count, loop_count, recipients.length]
+        0x20 mul                           // [outer_loop_count * 32, recipients.length]
+        [ADDRESS_ONE_OFFSET] add           // [current_address_offset, outer_loop_count, recipients.length]
+        calldataload                       // [outer_loop_address, outer_loop_count, recipients.length]
+        dup1                               // [outer_loop_address, outer_loop_address, outer_loop_count, recipients.length]
+        iszero return_false jumpi          // [outer_loop_address, outer_loop_count, recipients.length]
+
+        // inner loop starts at index i + 1
+        dup2 0x01 add                      // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+
+        inner_loop_start:
+            // Break loop conditional
+            dup1 dup5                      // [recipients.length, inner_loop_count, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+            eq inner_loop_end jumpi        // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+            // Compare addresses
+            dup1                           // [inner_loop_count, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+            0x20 mul                       // [inner_loop_count * 32, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
+            [ADDRESS_ONE_OFFSET] add       // [inner_loop_address_offset, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
+            calldataload                   // [inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+            dup3                           // [outer_loop_address, inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+            // We could obviously combine these next two jumps into one for gas optimization
+            eq return_false jumpi          // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+
+            // Incremement inner loop count
+            0x01 add                       // [inner_loop_count + 1, outer_loop_address, outer_loop_count, recipients.length]
+            inner_loop_start jump
+
+            // This is a gross waste of gas having all these jumps... but whatever
+            inner_loop_end:                    // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+                // pop off inner loop vars
+                pop pop 
+                // Increment outer loop count
+                0x01 add                       // [outer_loop_count + 1, recipients.length]
+                dup2 dup2                      // [outer_loop_count, recipients.length, outer_loop_count, recipients.length]
+                outer_loop_start jump
+            // inner_loop target end stack:// [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+    // outer_loop target end stack: // [inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
+    return_true:
+        // 1 is true
+        0x01 0x00 mstore 
+        0x20 0x00 return
+    
+    return_false:
+        // 0 is false
+        0x00 0x00 mstore 
+        0x20 0x00 return
 }
 
 #define macro MAIN() = takes (0) returns (0) {
@@ -178,9 +264,14 @@
 
     dup1 __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
 
-    airdropERC20:
-        AIRDROP_ERC20()
+    dup1 __FUNC_SIG(isValidRecipientsList) eq isValidRecipientsList jumpi
 
     endcall:
         0x00 0x00 revert
+
+    airdropERC20:
+        AIRDROP_ERC20()
+    
+    isValidRecipientsList:
+        IS_VALID_RECIPIENTS()
 }

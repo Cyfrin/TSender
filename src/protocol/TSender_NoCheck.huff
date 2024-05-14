@@ -1,6 +1,5 @@
 /* Interface */
 #define function airdropERC20(address,address[],uint256[],uint256) nonpayable returns()
-#define function airdropETH(address[], uint256[], uint256) payable returns()
 
 /* Memory Locations */
 #define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
