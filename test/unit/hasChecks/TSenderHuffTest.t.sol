@@ -9,7 +9,7 @@ import {HuffDeployer} from "lib/foundry-huff/src/HuffDeployer.sol";
 contract TSenderHuffTest is Base_Test {
     string public constant tsenderHuffLocation = "protocol/TSender";
 
-    function setUp() public override {
+    function setUp() public {
         TSender tSenderHuff = TSender(HuffDeployer.config().deploy(tsenderHuffLocation));
         tSender = ITSender(address(tSenderHuff));
         mockERC20 = new MockERC20();

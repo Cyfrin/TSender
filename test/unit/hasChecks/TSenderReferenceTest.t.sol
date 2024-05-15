@@ -6,9 +6,11 @@ import {TSenderReference} from "src/reference/TSenderReference.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 
 contract TSenderReferenceTest is Base_Test {
-    function setUp() public override {
+    function setUp() public {
         TSenderReference tSenderReference = new TSenderReference();
         tSender = ITSender(address(tSenderReference));
         mockERC20 = new MockERC20();
+        _isValidRecipientsListFunctionAvailable = true;
+        _hasSafetyChecks = true;
     }
 }

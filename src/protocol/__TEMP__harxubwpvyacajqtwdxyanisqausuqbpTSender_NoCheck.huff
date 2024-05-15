@@ -1,0 +1,158 @@
+
+
+/* Interface */
+#define function airdropERC20(address,address[],uint256[],uint256) nonpayable returns()
+
+/* Memory Locations */
+#define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
+#define constant AMOUNT_MEMORY_LOCATION = 0x40
+#define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION =  0x80
+
+/* Calldata Offsets */
+#define constant TOKEN_ADDRESS_OFFSET = 0x04
+#define constant TOTAL_AMOUNT_OFFSET = 0x64
+#define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
+#define constant RECIPIENT_ONE_OFFSET = 0xa4
+
+/* Constants */ 
+#define constant TWENTY_EIGHT = 0x1c
+
+/* Methods */
+// cast sig "airdropERC20(address,address[],uint256[],uint256)"
+// 0x82947abe
+#define macro AIRDROP_ERC20() = takes (0) returns (0) {
+    // the calldata will be:
+    // <4 bytes - func select> <32 bytes - tokenAddress> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
+    // check for equal lengths
+    // Remember, jump will fire if it gets anything other than 0. 0 is false.
+
+    // cast calldata "airdropERC20(address,address[],uint256[],uint256)" 0x00000000000000000000000000000000075BCd15 [0x0000000000000000000000000000000000bC610A] [77] 77
+
+    // Example calldata:
+    // 0x82947abe 
+    // 00000000000000000000000000000000000000000000000000000000075bcd15    // erc20 address
+    // 0000000000000000000000000000000000000000000000000000000000000080    // 128, there are 4 total parameters (20 * 4)
+    // 00000000000000000000000000000000000000000000000000000000000000c0    // 192, for a total of 6 parameters, including stuff in the arrays
+    // 000000000000000000000000000000000000000000000000000000000000004d    // uint256 totalAmount 
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of recipients
+    // 0000000000000000000000000000000000000000000000000000000000bc610a    // recipient
+    // 0000000000000000000000000000000000000000000000000000000000000001    // number of amounts
+    // 000000000000000000000000000000000000000000000000000000000000004d    // amount
+
+    // cast calldata "airdropERC20(address,address[],uint256[],uint256)" 0x00000000000000000000000000000000075BCd15 ["0x0000000000000000000000000000000000bC610A","0x0000000000000000000000000000000000bC610A"] [77] 78
+
+    // 0x82947abe
+    // 00000000000000000000000000000000000000000000000000000000075bcd15     // erc20 address
+    // 0000000000000000000000000000000000000000000000000000000000000080     // 128 - there are 4 total parameters
+    // 00000000000000000000000000000000000000000000000000000000000000e0     // 224 - for a total of 7 parameters, including stuff in the arrays
+    // 000000000000000000000000000000000000000000000000000000000000004e     // 78, totalAmount
+    // 0000000000000000000000000000000000000000000000000000000000000002     // number of recipients
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 1
+    // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 2
+    // 0000000000000000000000000000000000000000000000000000000000000001     // number of amounts
+    // 000000000000000000000000000000000000000000000000000000000000004d     // amounts 1 
+    // wrong number of amounts! Should revert!
+
+    // Function selector starts on the bottom of the stack
+    [NUMBER_OF_RECIPIENTS_OFFSET]                // [0x84]
+    calldataload                                 // [recipients.length]
+    0x20                                         // [0x20, recipients.length]
+    mul                                          // [recipients.length * 32]
+    [RECIPIENT_ONE_OFFSET]                       // [recipient_one_offset, recipients.length * 32]
+    add                                          // [number_of_amounts_offset]
+
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION]   // [number_of_amounts_offset_memory_location, number_of_amounts_offset, number_of_amounts_offset]
+    mstore                                       // []   
+
+    // Function selector is technically still on the bottom of the stack
+    // transferFrom(msg.sender, address(this), amount)
+    // This next line will result in memory looking like this:
+    // 0x0000000000000000000000000000000000000000000000000000000023b872dd
+    // It's different from yul. Yul does a shl (left shift)
+    0x23b872dd 0x00 mstore                       // [] -> {0x00: 0x23b872dd}
+    // Since memory looks like the comment above, we could do a left shift, or we could just say calldata starts at byte offset 28
+    // We do the latter since it means we don't have to do a left shift
+    caller 0x20 mstore                           // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32)} 
+    address 0x40 mstore                          // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32)}
+    // amount should be at 0x64 in calldata, then store it at 0x60 in memory
+    0x64 calldataload 0x60 mstore                // [] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32), 0x60: amount (bytes32)}
+
+    ///////////////////////////////////////////////////////////////
+    //              CALL TRANSFERFROM, JUMP IF REVERTED
+    ///////////////////////////////////////////////////////////////
+    // Setup return
+    0x00 0x00 
+    // Setup memory (start at 0x1c aka 28) 
+    // This is because we are not doing the left shift that the yul does when calling `mstore`
+    0x64 [TWENTY_EIGHT]
+    // Setup value & address of ERC20
+    0x00 [TOKEN_ADDRESS_OFFSET] calldataload 
+    gas call // program counter 4c
+    transfer_from_didnt_fail jumpi
+        // cast sig TSender__TransferFailed()
+        0xfa10ea06 0x00 mstore
+        0x04 [TWENTY_EIGHT] revert
+
+    transfer_from_didnt_fail:
+    ///////////////////////////////////////////////////////////////
+    //                         TRANSFER SETUP
+    ///////////////////////////////////////////////////////////////
+    // transfer(address,amount)
+    // This next line setups up memory to look like this:
+    // 0x00000000000000000000000000000000000000000000000000000000a9059cbb 
+    0xa9059cbb 0x00 mstore        
+
+    // Setup for later
+    [TOKEN_ADDRESS_OFFSET] calldataload                                                   // [token_address]                      
+
+    // let diff := sub(recipients.offset, amounts.offset)
+    // remember, our number of amounts is stored in memory, not statically
+    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub    // [diff, token_address]
+
+    // let end := add(recipients.offset, shl(5, recipients.length))
+    // recipients.length
+    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
+    // add(recipients.offset, shl(5
+    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                                           // [end, diff, token_address]
+    [RECIPIENT_ONE_OFFSET]                                                                                       // [address_offset, end, diff, token_address]
+
+    loop_start:
+        dup3                                                // [diff, address_offset, end, diff, token_address]                        
+        // To address, and setting up to use addressOffset later
+        dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address]                    
+        calldataload [TO_ADDRESS_MEMORY_LOCATION] mstore                                                        // [address_offset, diff, address_offset, end, diff, token_address]  
+        // Amount
+        sub calldataload [AMOUNT_MEMORY_LOCATION] mstore                                                        // [address_offset, end, diff, token_address]                                                             
+        
+        // call(gas(), tokenAddress, 0, 0x00, 0x44, 0, 0)
+        0x00 0x00 0x44 [TWENTY_EIGHT] 0x00 dup9 gas call                                                        // [success, address_offset, end, diff, token_address]
+        transfer_didnt_fail jumpi                                                                               // [address_offset, end, diff, token_address]
+            // cast sig TSender__TransferFailed()
+            0xfa10ea06 0x00 mstore
+            0x04 [TWENTY_EIGHT] revert
+
+        // increment the address offset
+        transfer_didnt_fail:
+        // [(old) address_offset, end, diff, token_address]
+
+        0x20 add                                                                                                 // [(new) address_offset, end, diff, token_address]
+        dup2 dup2                                                                                                // [address_offset, end, address_offset, end, diff, token_address]                 
+        
+        // if addressOffset >= end, jump to end
+        // if iszero(lt(addressOffset, end)) { break }
+        // should be comparing // [(new) address_offset, end]
+        lt loop_start jumpi                                                                                     // [(new) address_offset, end, diff, token_address]                                                                       
+        // target [address_offset, end, diff, token_address]
+    stop
+}
+
+#define macro MAIN() = takes (0) returns (0) {
+    0x00 calldataload 0xE0 shr
+
+    dup1 __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
+
+    airdropERC20:
+        AIRDROP_ERC20()
+
+    0x00 0x00 revert
+}

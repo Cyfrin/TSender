@@ -1,0 +1,10 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+ds-test/=lib/openzeppelin-contracts/lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
+forge-std/=lib/forge-std/src/
+foundry-huff/=lib/foundry-huff/src/
+halmos-cheatcodes/=lib/halmos-cheatcodes/src/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
+solidity-stringutils/=lib/foundry-huff/lib/solidity-stringutils/
+stringutils/=lib/foundry-huff/lib/solidity-stringutils/
