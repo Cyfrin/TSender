@@ -13,6 +13,11 @@ pragma solidity 0.8.24;
  * @notice https://github.com/PopPunkLLC/GasliteDrop
  */
 contract TSender {
+    error TSender__TotalDoesntAddUp();
+    error TSender__LengthsDontMatch();
+    error TSender__TransferFailed();
+    error TSender__ZeroAddress();
+
     /**
      * @param tokenAddress - the address of the ERC20 token to airdrop
      * @param recipients - the addresses to airdrop to
