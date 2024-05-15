@@ -4,10 +4,10 @@
 /* Memory Locations */
 #define constant TO_ADDRESS_MEMORY_LOCATION = 0x20
 #define constant AMOUNT_MEMORY_LOCATION = 0x40
-#define constant NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION =  0x80
 
 /* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
+#define constant NUMBER_OF_AMOUNTS_OFFSET_OFFSET = 0x44
 #define constant TOTAL_AMOUNT_OFFSET = 0x64
 #define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
 #define constant RECIPIENT_ONE_OFFSET = 0xa4
@@ -20,7 +20,7 @@
 // 0x82947abe
 #define macro AIRDROP_ERC20() = takes (0) returns (0) {
     // the calldata will be:
-    // <4 bytes - func select> <32 bytes - tokenAddress> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
+    // <4 bytes - func select> <32 bytes - tokenAddress> <> <> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
     // check for equal lengths
     // Remember, jump will fire if it gets anything other than 0. 0 is false.
 
@@ -50,17 +50,6 @@
     // 0000000000000000000000000000000000000000000000000000000000000001     // number of amounts
     // 000000000000000000000000000000000000000000000000000000000000004d     // amounts 1 
     // wrong number of amounts! Should revert!
-
-    // Function selector starts on the bottom of the stack
-    [NUMBER_OF_RECIPIENTS_OFFSET]                // [0x84]
-    calldataload                                 // [recipients.length]
-    0x20                                         // [0x20, recipients.length]
-    mul                                          // [recipients.length * 32]
-    [RECIPIENT_ONE_OFFSET]                       // [recipient_one_offset, recipients.length * 32]
-    add                                          // [number_of_amounts_offset]
-
-    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION]   // [number_of_amounts_offset_memory_location, number_of_amounts_offset, number_of_amounts_offset]
-    mstore                                       // []   
 
     // Function selector is technically still on the bottom of the stack
     // transferFrom(msg.sender, address(this), amount)
@@ -105,7 +94,9 @@
 
     // let diff := sub(recipients.offset, amounts.offset)
     // remember, our number of amounts is stored in memory, not statically
-    [NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION] mload [NUMBER_OF_RECIPIENTS_OFFSET] sub    // [diff, token_address]
+    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset]
+    0x4 add                                                     // [true_amounts.offset]
+    [NUMBER_OF_RECIPIENTS_OFFSET] sub                           // [diff, token_address]
 
     // let end := add(recipients.offset, shl(5, recipients.length))
     // recipients.length

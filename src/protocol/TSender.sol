@@ -104,20 +104,30 @@ contract TSender {
     }
 
     /**
-     * @dev We don't need to make this function gas optimized since we call it only as a pure function.
+     * @notice We don't care about making this gas optimized, since we never `CALL` it, only `STATICCALL`
      * @notice This function is meant to be used to check if the contract is a valid TSender contract
      * @notice It will check for:
      *  - Duplicate addresses
-     *  - Zero Addresses
+     *  - Zero address sends
+     *  - There is at least 1 recipient
+     *  - All amounts are > 0
+     *  - Lengths of arrays match
      * @param recipients The list of addresses to check
+     * @param amounts The list of amounts to check
      * @return bool
      */
-    function isValidRecipientsList(address[] calldata recipients) external pure returns (bool) {
+    function areListsValid(address[] calldata recipients, uint256[] calldata amounts) external pure returns (bool) {
         if (recipients.length == 0) {
+            return false;
+        }
+        if (recipients.length != amounts.length) {
             return false;
         }
         for (uint256 i; i < recipients.length; i++) {
             if (recipients[i] == address(0)) {
+                return false;
+            }
+            if (amounts[i] == 0) {
                 return false;
             }
             for (uint256 j = i + 1; j < recipients.length; j++) {

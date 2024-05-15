@@ -9,5 +9,5 @@ interface ITSender {
         uint256 totalAmount
     ) external;
 
-    function isValidRecipientsList(address[] calldata recipients) external view returns (bool);
+    function areListsValid(address[] calldata recipients, uint256[] calldata amounts) external view returns (bool);
 }
