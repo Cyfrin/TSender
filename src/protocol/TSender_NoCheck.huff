@@ -149,8 +149,8 @@
 
     dup1 __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
 
+    0x00 0x00 revert
+
     airdropERC20:
         AIRDROP_ERC20()
-
-    0x00 0x00 revert
 }
