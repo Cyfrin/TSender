@@ -94,6 +94,8 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
   - You'll know you did it right if you can run `git --version` and you see a response like `git version x.x.x`
 - [foundry](https://getfoundry.sh/)
   - You'll know you did it right if you can run `forge --version` and you see a response like `forge 0.2.0 (816e00b 2023-03-16T00:05:26.396218Z)`
+- [huff](https://docs.huff.sh/get-started/installing/)
+  - You'll know you did it right if you can run `huffc --version` and you see a response like `huffc 0.3.2`
 - [halmos](https://github.com/a16z/halmos)
   - You'll know you've done it right if you can run `halmos --version` and you see a response like `Halmos 0.1.12`
 
