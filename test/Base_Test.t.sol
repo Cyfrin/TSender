@@ -264,6 +264,26 @@ abstract contract Base_Test is Test {
         assertEq(succ, false);
     }
 
+    function test_sendZeroAmount() public virtual hasSafetyChecks {
+        // Arrange
+        vm.startPrank(address(this));
+        mockERC20.mint(1e9);
+        mockERC20.approve(address(tSender), 1e9);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = recipientOne;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 0;
+
+        // Act
+        vm.prank(address(this));
+        tSender.airdropERC20(address(mockERC20), recipients, amounts, 0);
+
+        // Assert
+        assertEq(mockERC20.balanceOf(recipientOne), 0);
+    }
+
     ///////////////////////////
     // isValidRecipientsList //
     ///////////////////////////
