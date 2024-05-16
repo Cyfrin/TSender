@@ -19,6 +19,7 @@
   - [Installation](#installation)
   - [Quickstart / Usage](#quickstart--usage)
     - [Testing](#testing)
+    - [Testing with zkSync](#testing-with-zksync)
       - [Why no stateful fuzz tests?](#why-no-stateful-fuzz-tests)
     - [Deployment](#deployment)
 - [Audit Data](#audit-data)
@@ -39,8 +40,9 @@ Hyper gas efficient smart contracts for air dropping tokens to a large number of
 - `TSender_NoCheck.huff`: The Huff implementation without the extra checks, making the output similar to `GasliteDrop`
 - `TSenderReference.sol`: The pure Solidity implementation
 
-Each contract has exactly 1 function:
-- `airdropERC20`: A function that takes in an array of recipients and an array of amounts, and sends the amounts to the recipients.
+Each contract has 1 or 2 functions:
+- `airdropERC20` (required): A function that takes in an array of recipients and an array of amounts, and sends the amounts to the recipients.
+- `areValidLists` (optional): A function that takes in an array of recipients and an array of amounts, and checks if the lists are valid.
 
 ## TSender Features 
 - Checks the `totalAmount` parameter matches the sum of the `amounts` array
@@ -48,10 +50,12 @@ Each contract has exactly 1 function:
 - Makes sure the total lengths of the `amounts` array and `recipients` array are the same
 - Checks for zero address recipients 
 
-Additionally, we did not want to spend gas checking for zero address `recipients`, so we added a function called `isValidRecipientsList` to check for:
+Additionally, we did not want to spend gas checking a few things, so we added a function called `areListsValid` that takes in a `address[] recipients` and `uint256[] amounts` to check for:
 - Duplicate addresses
 - Zero address sends 
 - There is at least 1 recipient
+- All amounts are > 0
+- recipients.length == amounts.length
 
 ## GasliteDrop Comparison
 
@@ -122,7 +126,31 @@ make test
 make halmos
 ```
 
-When working with `foundry-zksync`, you may run `make zktest`, or add `--zksync` to the end of all `forge` commands. 
+### Testing with zkSync
+
+To test with zkSync, we must first remove our `Huff` tests. We will not be deploying the huff code to zkSync, and the codebases doesn't play nice with `foundry-zksync`.
+
+To run zkSync tests:
+
+1. Comment out the following files
+   1. `TSenderHuffTest.t.sol`
+   2. `TSenderHuffNoCheckTest.t.sol`
+   3. `EquivalenceTest.sol`
+   4. `DeployHuff.s.sol`
+You'll need to leave this line uncommented in each file:
+```javascript
+pragma solidity 0.8.24;
+```
+1. Run the tests:
+```bash
+make zktest
+```
+or
+```
+forge test --zksync
+```
+
+*We have an issue in `foundry-zksync` to fix the issue with `avoid-contracts`. That would be the ideal solution in the future.*
 
 #### Why no stateful fuzz tests?
 
@@ -173,14 +201,20 @@ Ignore:
 We expect to be able to run our deploy scripts, and it will prevent us from deploying contracts to chains that are not supported. Right now, zkSync will work with the `yul` based `TSender.sol`, and all other chains listed in the `HelperConfig.sol` will work with the `TSender.huff` contract. 
 
 ### Target deployment chains
-- Ethereum:
-  - `TSender.huff`
-- zkSync:
-  - `TSender.sol`
+- `TSender.sol`:
+  - zkSync Era
+  - Everything in the `TSender.huff` list
+- `TSender.huff`:
+  - Ethereum 
+  - Arbitrum
+  - Optimism
+  - Base
+  - Blast
 
 ## Notes
 - There is an issue with how quickly the `foundry-zksync` compiler works, so we avoid compiling the `DeployHuff.s.sol` contract. 
 - Compliation takes a *long* time, so run tests accordingly. It may make sense to run tests with the standard foundry implementation before swapping to the `foundry-zksync` implementation.
+- Please take note of the target deployment chains during audit and check to see if our Huff or Solidity will work there.
 
 # Acknowledgements
 - [Gaslite](https://github.com/PopPunkLLC/GasliteDrop)
@@ -189,4 +223,4 @@ We expect to be able to run our deploy scripts, and it will prevent us from depl
 - [backseats_eth](https://twitter.com/backseats_eth)
 
 # Future (Huff) gas optimization
-- Turn `NUMBER_OF_AMOUNTS_OFFSET_MEMORY_LOCATION` into a stack variable
+- There is a `swap2` opcode we can probably remove if we optimize the stack a little more during the `TRANSFER SETUP` and before the `loop_start`

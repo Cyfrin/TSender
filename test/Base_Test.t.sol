@@ -22,8 +22,8 @@ abstract contract Base_Test is Test {
 
     // Does the contract check for special addresses when sending?
     // If true, run tests on that check
-    // This also applies to the isValidRecipientsList function
-    // If the contract has safety checks, it should also have the isValidRecipientsList function
+    // This also applies to the areListsValid function
+    // If the contract has safety checks, it should also have the areListsValid function
     bool internal _hasSafetyChecks;
 
     /*//////////////////////////////////////////////////////////////
@@ -32,12 +32,12 @@ abstract contract Base_Test is Test {
     // This test fuzzes the number of recipients and amounts
     // It assumes that the length is the same for both arrays
     // It also removes duplicates and special addresses from the recipients array
-    function test_fuzzNumberOfRecipients(address[] calldata recipients, uint32[] calldata amounts, address sender)
-        public
-        virtual
-    {
-        vm.assume(sender != address(0) && sender != address(this) && sender != address(tSender));
-        vm.assume(recipients.length == amounts.length);
+    function test_fuzzNumberOfRecipients(address[] calldata recipients, uint32[] memory amounts) public virtual {
+        // we don't fuzz the sender so we don't get too many test rejects
+        address sender = makeAddr("sender");
+        // We don't vm.assume the lengths are the same, we'd get too many rejected tests
+        vm.assume(recipients.length > 0);
+        vm.assume(amounts.length > 0);
 
         // Get unique recipients
         address[] memory uniqueRecipients = _removeSpecialAddessesAndDuplicates(recipients, sender);
@@ -45,8 +45,9 @@ abstract contract Base_Test is Test {
         uint256 totalAmount = 0;
         uint256[] memory allAmounts = new uint256[](uniqueRecipients.length);
         for (uint256 i = 0; i < uniqueRecipients.length; i++) {
-            totalAmount += amounts[i];
-            allAmounts[i] = uint256(amounts[i]);
+            uint256 amountToStore = amounts[i % amounts.length] == 0 ? 1 : uint256(amounts[i % amounts.length]);
+            totalAmount += amountToStore;
+            allAmounts[i] = amountToStore;
         }
         console2.log("Total amount", totalAmount);
 
@@ -57,13 +58,13 @@ abstract contract Base_Test is Test {
         mockERC20.approve(address(tSender), totalAmount);
         vm.stopPrank();
 
-        // Test the isValidRecipientsList function if available
+        // Test the areListsValid function if available
         // (only implemented in the Reference and Yul contracts)
         if (_hasSafetyChecks) {
             if (recipients.length != uniqueRecipients.length) {
-                assertFalse(tSender.isValidRecipientsList(recipients));
+                assertFalse(tSender.areListsValid(recipients, allAmounts));
             }
-            assertTrue(tSender.isValidRecipientsList(uniqueRecipients));
+            assertTrue(tSender.areListsValid(uniqueRecipients, allAmounts));
         }
 
         // Act
@@ -239,7 +240,7 @@ abstract contract Base_Test is Test {
 
     function test_revertsWhenNoProperFunctionSelectorUsedWithChecks(bytes4 selector) public virtual hasSafetyChecks {
         vm.assume(selector != TSenderReference.airdropERC20.selector);
-        vm.assume(selector != TSenderReference.isValidRecipientsList.selector);
+        vm.assume(selector != TSenderReference.areListsValid.selector);
 
         console2.logBytes4(selector);
         console2.logBytes(abi.encodeWithSelector(selector));
@@ -279,11 +280,11 @@ abstract contract Base_Test is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                         ISVALIDRECIPIENTSLIST
+                         areListsValid
     //////////////////////////////////////////////////////////////*/
     // Test that the contract reverts if there are duplicates in the recipients list
-    // ONLY by using the isValidRecipientsList function
-    function test_isValidRecipientsReturnsFalseOnDuplicates() public virtual hasSafetyChecks {
+    // ONLY by using the areListsValid function
+    function test_areListsValidReturnsFalseOnDuplicates() public virtual hasSafetyChecks {
         address sender = makeAddr("sender");
         uint256 amount = 123;
         // Arrange
@@ -309,13 +310,23 @@ abstract contract Base_Test is Test {
         amounts[4] = amount;
 
         // Act
-        bool isValidList = tSender.isValidRecipientsList(recipients);
+        bool isValidList = tSender.areListsValid(recipients, amounts);
+        assert(!isValidList);
+    }
+
+    function test_returnsFalseIfLengthsDontMatch(address[] memory recipients, uint256[] memory amounts)
+        public
+        virtual
+        hasSafetyChecks
+    {
+        vm.assume(recipients.length != amounts.length);
+        bool isValidList = tSender.areListsValid(recipients, amounts);
         assert(!isValidList);
     }
 
     // Test that the contract reverts if there are duplicates in the recipients list
-    // ONLY by using the isValidRecipientsList function
-    function test_isValidRecipientsReturnsTrue() public virtual hasSafetyChecks {
+    // ONLY by using the areListsValid function
+    function test_areListsValidReturnsTrue() public virtual hasSafetyChecks {
         address sender = makeAddr("sender");
         uint256 amount = 123;
         // Arrange
@@ -341,13 +352,74 @@ abstract contract Base_Test is Test {
         amounts[4] = amount;
 
         // Act
-        bool isValidList = tSender.isValidRecipientsList(recipients);
+        bool isValidList = tSender.areListsValid(recipients, amounts);
         assert(isValidList);
     }
 
     function test_zeroLengthRecipientsReturnsFalse() public virtual hasSafetyChecks {
+        uint256[] memory amounts = new uint256[](0);
         address[] memory recipients = new address[](0);
-        bool isValidList = tSender.isValidRecipientsList(recipients);
+        bool isValidList = tSender.areListsValid(recipients, amounts);
+        assert(!isValidList);
+    }
+
+    function test_zeroAmountInAmountsReturnFalse() public virtual hasSafetyChecks {
+        address sender = makeAddr("sender");
+        uint256 amount = 123;
+        // Arrange
+        uint256 expectedTotalAmount = amount * 2;
+
+        vm.startPrank(sender);
+        mockERC20.mint(expectedTotalAmount);
+        mockERC20.approve(address(tSender), expectedTotalAmount);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](5);
+        recipients[0] = sender;
+        recipients[1] = address(10);
+        recipients[2] = address(11);
+        recipients[3] = address(12);
+        recipients[4] = address(13);
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = amount;
+        amounts[1] = amount;
+        amounts[2] = amount;
+        amounts[3] = 0;
+        amounts[4] = amount;
+
+        // Act
+        bool isValidList = tSender.areListsValid(recipients, amounts);
+        assert(!isValidList);
+    }
+
+    function test_zeroAddressReturnsFalse() public virtual hasSafetyChecks {
+        address sender = makeAddr("sender");
+        uint256 amount = 123;
+        // Arrange
+        uint256 expectedTotalAmount = amount * 2;
+
+        vm.startPrank(sender);
+        mockERC20.mint(expectedTotalAmount);
+        mockERC20.approve(address(tSender), expectedTotalAmount);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](5);
+        recipients[0] = sender;
+        recipients[1] = address(10);
+        recipients[2] = address(11);
+        recipients[3] = address(0);
+        recipients[4] = address(13);
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = amount;
+        amounts[1] = amount;
+        amounts[2] = amount;
+        amounts[3] = amount;
+        amounts[4] = amount;
+
+        // Act
+        bool isValidList = tSender.areListsValid(recipients, amounts);
         assert(!isValidList);
     }
 

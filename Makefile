@@ -19,14 +19,16 @@ update:; forge update
 
 build:; RUST_LOG=debug forge build
 
-zkbuild :; RUST_LOG=debug  forge build --zksync
+zkbuild :; RUST_LOG=debug forge build --zksync
 
 test :; forge test
 
-zktest :; forge test --zksync --mc TSenderYulTest
+zktest :; forge test --zksync 
 
 # I couldn't get the --match-contract to work
-halmos :; halmos --function testEachShouldSendTheExactAmount --solver-timeout-assertion 0 && halmos --function testBothRevertIfValueIsSent --solver-timeout-assertion 0 && halmos --function testMultiSendResultsInSameSuccess --solver-timeout-assertion 0 
+# REMEMBER, WE MANUALLY ADD THE HUFF CODE TO OUR FormalEquivalence.sol FILE
+# huffc src/protocol/TSender.huff --bytecode > compiled_huff.txt
+halmos :; halmos --function testEachShouldSendTheExactAmount --solver-timeout-assertion 0 && halmos --function testBothRevertIfValueIsSent --solver-timeout-assertion 0 && halmos --function testAreListsValidAlwaysOutputEquallyForSolcAndYul --solver-timeout-assertion 0 && halmos --function testSolidInputsResultInTheSameOutputsFuzz --solver-timeout-assertion 0
 
 snapshot :; forge snapshot
 
