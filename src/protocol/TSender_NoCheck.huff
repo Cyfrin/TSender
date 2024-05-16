@@ -8,7 +8,6 @@
 /* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
 #define constant NUMBER_OF_AMOUNTS_OFFSET_OFFSET = 0x44
-#define constant TOTAL_AMOUNT_OFFSET = 0x64
 #define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
 #define constant RECIPIENT_ONE_OFFSET = 0xa4
 
@@ -19,8 +18,8 @@
 // cast sig "airdropERC20(address,address[],uint256[],uint256)"
 // 0x82947abe
 #define macro AIRDROP_ERC20() = takes (0) returns (0) {
-    // the calldata will be:
-    // <4 bytes - func select> <32 bytes - tokenAddress> <> <> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
+     // the calldata will be:
+    // <4 bytes - func select> <32 bytes - tokenAddress> <32 bytes - first dynamic type offset> <32 bytes - second dynamic type offset> <32 bytes - totalAmount><xx bytes recipients><xx bytes amounts>
     // check for equal lengths
     // Remember, jump will fire if it gets anything other than 0. 0 is false.
 
@@ -29,8 +28,8 @@
     // Example calldata:
     // 0x82947abe 
     // 00000000000000000000000000000000000000000000000000000000075bcd15    // erc20 address
-    // 0000000000000000000000000000000000000000000000000000000000000080    // 128, there are 4 total parameters (20 * 4)
-    // 00000000000000000000000000000000000000000000000000000000000000c0    // 192, for a total of 6 parameters, including stuff in the arrays
+    // 0000000000000000000000000000000000000000000000000000000000000080    // 128, the first dynamic type starts at 128 + 4 slot in this calldata. 
+    // 00000000000000000000000000000000000000000000000000000000000000c0    // 192, the second dynamic type starts at 192 + 4 slot in this calldata.
     // 000000000000000000000000000000000000000000000000000000000000004d    // uint256 totalAmount 
     // 0000000000000000000000000000000000000000000000000000000000000001    // number of recipients
     // 0000000000000000000000000000000000000000000000000000000000bc610a    // recipient
@@ -41,15 +40,14 @@
 
     // 0x82947abe
     // 00000000000000000000000000000000000000000000000000000000075bcd15     // erc20 address
-    // 0000000000000000000000000000000000000000000000000000000000000080     // 128 - there are 4 total parameters
-    // 00000000000000000000000000000000000000000000000000000000000000e0     // 224 - for a total of 7 parameters, including stuff in the arrays
+    // 0000000000000000000000000000000000000000000000000000000000000080     // 128, the first dynamic type starts at 128 + 4 slot in this calldata.
+    // 00000000000000000000000000000000000000000000000000000000000000e0     // 224, the second dynamic type starts at 224 + 4 slot in this calldata.
     // 000000000000000000000000000000000000000000000000000000000000004e     // 78, totalAmount
     // 0000000000000000000000000000000000000000000000000000000000000002     // number of recipients
     // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 1
     // 0000000000000000000000000000000000000000000000000000000000bc610a     // recipient 2
     // 0000000000000000000000000000000000000000000000000000000000000001     // number of amounts
     // 000000000000000000000000000000000000000000000000000000000000004d     // amounts 1 
-    // wrong number of amounts! Should revert!
 
     // Function selector is technically still on the bottom of the stack
     // transferFrom(msg.sender, address(this), amount)
