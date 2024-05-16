@@ -27,7 +27,7 @@
 // 0x82947abe
 #define macro AIRDROP_ERC20() = takes (0) returns (0) {
     // the calldata will be:
-    // <4 bytes - func select> <32 bytes - tokenAddress> <XX bytes - recipient> <XX bytes - amounts> <32 bytes - totalAmount>
+    // <4 bytes - func select> <32 bytes - tokenAddress> <32 bytes - first dynamic type offset> <32 bytes - second dynamic type offset> <32 bytes - totalAmount><xx bytes recipients><xx bytes amounts>
     // check for equal lengths
     // Remember, jump will fire if it gets anything other than 0. 0 is false.
 

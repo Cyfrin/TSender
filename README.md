@@ -37,7 +37,7 @@
 Hyper gas efficient smart contracts for air dropping tokens to a large number of users. Inspired by the work of the [Gaslite team](https://github.com/PopPunkLLC/GasliteDrop/tree/main). In the `src` folder, we have 4 main contracts:
 - `TSender.sol`: The Yul/Solidity implementation 
 - `TSender.huff`: The Huff implementation
-- `TSender_NoCheck.huff`: The Huff implementation without the extra checks, making the output similar to `GasliteDrop`
+- `TSender_NoCheck.huff`: The Huff implementation without the extra checks, making the output similar to `GasliteDrop`. Much more gas efficient, but without any safety rails. 
 - `TSenderReference.sol`: The pure Solidity implementation
 
 Each contract has 1 or 2 functions:
@@ -186,15 +186,17 @@ make deployHuff
 #-- protocol
 |   #-- TSender.huff
 |   #-- TSender.sol
+|   #-- TSender_NoCheck.huff
 ```
 
 Ignore:
 ```bash
-#-- protocol
-|   #-- TSender_NoCheck.huff
 #-- reference
     #-- TSenderReference.sol
+#-- script/
 ```
+
+Deploy scripts are not in scope because we can easily redeploy if we have an issue. 
 
 ## Chain compatibility
 
