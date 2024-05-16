@@ -393,6 +393,36 @@ abstract contract Base_Test is Test {
         assert(!isValidList);
     }
 
+    function test_zeroAddressReturnsFalse() public virtual hasSafetyChecks {
+        address sender = makeAddr("sender");
+        uint256 amount = 123;
+        // Arrange
+        uint256 expectedTotalAmount = amount * 2;
+
+        vm.startPrank(sender);
+        mockERC20.mint(expectedTotalAmount);
+        mockERC20.approve(address(tSender), expectedTotalAmount);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](5);
+        recipients[0] = sender;
+        recipients[1] = address(10);
+        recipients[2] = address(11);
+        recipients[3] = address(0);
+        recipients[4] = address(13);
+
+        uint256[] memory amounts = new uint256[](5);
+        amounts[0] = amount;
+        amounts[1] = amount;
+        amounts[2] = amount;
+        amounts[3] = amount;
+        amounts[4] = amount;
+
+        // Act
+        bool isValidList = tSender.areListsValid(recipients, amounts);
+        assert(!isValidList);
+    }
+
     /*//////////////////////////////////////////////////////////////
                                GAS TESTS
     //////////////////////////////////////////////////////////////*/
