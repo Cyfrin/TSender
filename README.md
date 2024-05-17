@@ -69,22 +69,21 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 > Note: Since our implementation adds more checks, the Huff code is slightly *less* gas efficient when working with additional recipients than the original gaslite codebase, but it is a safer smart contract. However, we did include a Huff contract the did not include those checks to show the power of using Huff to reduce gas costs.
 
 ### Efficiency Improvement vs Solidity					
-| Project                | 1 Recipient | 10 Recipients | 100 Recipients | 1000 Recipients | Mean Gas Improvement |
-| ---------------------- | ----------- | ------------- | -------------- | --------------- | -------------------- |
-| TSender - Yul          | 1.80%       | 2.53%         | 2.69%          | 2.71%           | 2.43%                |
-| Gaslite                | 1.82%       | 2.59%         | 2.76%          | 2.78%           | 2.49%                |
-| TSender - Huff         | 3.04%       | 2.79%         | 2.73%          | 2.73%           | 2.83%                |
-| TSender - Huff_NoCheck | 3.20%       | 2.86%         | 2.79%          | 2.79%           | 2.91%                |
-
+| # of recipients | Yul   | Gaslite | Huff  | Huff (No Checks) |
+| --------------- | ----- | ------- | ----- | ---------------- |
+| 1               | 2.10% | 2.26%   | 3.42% | 3.61%            |
+| 10              | 3.23% | 3.38%   | 3.51% | 3.65%            |
+| 100             | 3.48% | 3.62%   | 3.52% | 3.66%            |
+| 1000            | 3.51% | 3.66%   | 3.53% | 3.66%            |
 
 ### Actual Gas Costs
 
 |                      | Solidity | Yul      | Gaslite  | Huff     | Huff, no check |
 | -------------------- | -------- | -------- | -------- | -------- | -------------- |
-| 1 Recipient Drop     | 57176    | 56167    | 56156    | 55487    | 55402          |
-| 10 Recipient Drops   | 293772   | 286517   | 286353   | 285801   | 285590         |
-| 100 Recipient Drops  | 2659963  | 2590226  | 2588532  | 2589150  | 2587679        |
-| 1000 Recipient Drops | 26344485 | 25648190 | 25631196 | 25643514 | 25629443       |
+| 1 Recipient Drop     | 57377    | 56170    | 56080    | 55415    | 55303          |
+| 10 Recipient Drops   | 295287   | 285737   | 285296   | 284937   | 284510         |
+| 100 Recipient Drops  | 2674618  | 2581616  | 2577665  | 2580366  | 2576789        |
+| 1000 Recipient Drops | 26490540 | 25561280 | 25522229 | 25555530 | 25520453       |
 
 <p align="center">
 <img src="./img/gas-vs-1000.png" width="500" alt="gas-vs-1000.png">
