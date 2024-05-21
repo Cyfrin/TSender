@@ -59,14 +59,17 @@
     // wrong number of amounts! Should revert!
 
     // Function selector starts on the bottom of the stack, so pretend you see it there when looking at the stack comments
-    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset]
-    0x4 add                                                     // [true_amounts.offset]
-    dup1                                                        // [amounts.offset, amounts.offset]
-    calldataload                                                // [amounts.length, amounts.offset]
-    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload                  // [recipients.length, amounts.length, amounts.offset]
-    eq                                                          // [amounts.length == recipients.length, amounts.offset] // 1 is true 
+    // Setup for later
+    0x00                                                        // [total_amount]
+    [TOKEN_ADDRESS_OFFSET] calldataload                         // [token_address, total_amount]                      
+    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset, token_address, total_amount]
+    0x4 add                                                     // [true_amounts.offset, token_address, total_amount]
+    dup1                                                        // [amounts.offset, amounts.offset, token_address, total_amount]
+    calldataload                                                // [amounts.length, amounts.offset, token_address, total_amount]
+    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload                  // [recipients.length, amounts.length, amounts.offset, token_address, total_amount]
+    eq                                                          // [amounts.length == recipients.length, amounts.offset, token_address, total_amount] // 1 is true 
     // Function selector is technically still on the bottom of the stack
-    lengths_match jumpi                          // [amounts.offset]
+    lengths_match jumpi                          // [amounts.offset, token_address, total_amount]
         // cast sig TSender__LengthsDontMatch()
         0x50a302d6 0x00 mstore
         0x04 [TWENTY_EIGHT] revert
@@ -76,25 +79,25 @@
     // This next line will result in memory looking like this:
     // 0x0000000000000000000000000000000000000000000000000000000023b872dd
     // It's different from yul. Yul does a shl (left shift)
-    0x23b872dd 0x00 mstore                       // [amounts.offset] -> {0x00: 0x23b872dd}
+    0x23b872dd 0x00 mstore                       // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd}
     // Since memory looks like the comment above, we could do a left shift, or we could just say calldata starts at byte offset 28
     // We do the latter since it means we don't have to do a left shift
-    caller 0x20 mstore                           // [amounts.offset] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32)} 
-    address 0x40 mstore                          // [amounts.offset] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32)}
+    caller 0x20 mstore                           // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32)} 
+    address 0x40 mstore                          // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32)}
     // amount should be at 0x64 in calldata, then store it at 0x60 in memory
-    0x64 calldataload 0x60 mstore                // [amounts.offset] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32), 0x60: amount (bytes32)}
+    0x64 calldataload 0x60 mstore                // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32), 0x60: amount (bytes32)}
 
     ///////////////////////////////////////////////////////////////
     //              CALL TRANSFERFROM, JUMP IF REVERTED
     ///////////////////////////////////////////////////////////////
     // Setup return
-    0x00 0x00                                    // [0, 0, amounts.offset]
+    0x00 0x00                                    // [0, 0, amounts.offset, token_address, total_amount]
     // Setup memory (start at 0x1c aka 28) 
     // This is because we are not doing the left shift that the yul does when calling `mstore`
-    0x64 [TWENTY_EIGHT]                          // [28, 0x64, 0, 0, amounts.offset]
+    0x64 [TWENTY_EIGHT]                          // [28, 0x64, 0, 0, amounts.offset, token_address, total_amount]
     // Setup value & address of ERC20
-    0x00 [TOKEN_ADDRESS_OFFSET] calldataload     // [token_address, 0, 28, 0x64, 0, 0, amounts.offset]
-    gas call // program counter 4c               // [success, amounts.offset]
+    0x00 [TOKEN_ADDRESS_OFFSET] calldataload     // [token_address, 0, 28, 0x64, 0, 0, amounts.offset, token_address, total_amount]
+    gas call // program counter 4c               // [success, amounts.offset, token_address, total_amount]
     transfer_from_didnt_fail jumpi               // 
         // cast sig TSender__TransferFailed()
         0xfa10ea06 0x00 mstore
@@ -108,11 +111,6 @@
     // This next line setups up memory to look like this:
     // 0x00000000000000000000000000000000000000000000000000000000a9059cbb 
     0xa9059cbb 0x00 mstore        
-
-    // Setup for later
-    [TOKEN_ADDRESS_OFFSET] calldataload                                                   // [token_address, amounts.offset]                      
-    0x00                                                                                  // [total_amount, token_address, amounts.offset]
-    swap2                                                                                 // [amounts.offset, token_address, total_amount]
 
     // let diff := sub(recipients.offset, amounts.offset)
     [NUMBER_OF_RECIPIENTS_OFFSET] sub                                                     // [diff, token_address, total_amount]
