@@ -80,10 +80,10 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 
 |                      | Solidity | Yul      | Gaslite  | Huff     | Huff, no check |
 | -------------------- | -------- | -------- | -------- | -------- | -------------- |
-| 1 Recipient Drop     | 57377    | 56170    | 56080    | 55415    | 55303          |
-| 10 Recipient Drops   | 295287   | 285737   | 285296   | 284937   | 284510         |
-| 100 Recipient Drops  | 2674618  | 2581616  | 2577665  | 2580366  | 2576789        |
-| 1000 Recipient Drops | 26490540 | 25561280 | 25522229 | 25555530 | 25520453       |
+| 1 Recipient Drop     | 57377    | 56170    | 56080    | 55409    | 55300          |
+| 10 Recipient Drops   | 295287   | 285737   | 285296   | 284931   | 284507         |
+| 100 Recipient Drops  | 2674618  | 2581616  | 2577665  | 2580360  | 2576786        |
+| 1000 Recipient Drops | 26490540 | 25561280 | 25522229 | 25555524 | 25520450       |
 
 <p align="center">
 <img src="./img/gas-vs-1000.png" width="500" alt="gas-vs-1000.png">
