@@ -290,9 +290,13 @@
 
     0x00 calldataload 0xE0 shr
 
-    dup1 __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
+    // We don't dup1 because we want to be as gas efficient 
+    // with the airdrop as possible
+    __FUNC_SIG(airdropERC20) eq airdropERC20 jumpi
 
-    dup1 __FUNC_SIG(areListsValid) eq areListsValid jumpi
+    // This means, for areListsValid, we need to get the selector again
+    0x00 calldataload 0xE0 shr 
+    __FUNC_SIG(areListsValid) eq areListsValid jumpi
 
     endcall:
         0x00 0x00 revert
