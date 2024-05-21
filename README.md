@@ -222,6 +222,3 @@ We expect to be able to run our deploy scripts, and it will prevent us from depl
 - [PopPunkOnChain](https://twitter.com/PopPunkOnChain)
 - [Vectorized](https://github.com/Vectorized/)
 - [backseats_eth](https://twitter.com/backseats_eth)
-
-# Future (Huff) gas optimization
-- There is a `swap2` opcode we can probably remove if we optimize the stack a little more during the `TRANSFER SETUP` and before the `loop_start`
