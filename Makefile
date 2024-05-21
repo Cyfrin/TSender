@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: all test clean deploy fund help install snapshot format anvil scopefile halmos
+.PHONY: all test clean deploy fund help install snapshot format anvil scopefile halmos cloc
 
 DEFAULT_ANVIL_KEY := 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
@@ -47,3 +47,5 @@ scope :; tree ./src/ | sed 's/└/#/g; s/──/--/g; s/├/#/g; s/│ /|/g; s/�
 deployyul :; forge script script/DeployYul.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
 
 deployhuff :; forge script script/DeployHuff.s.sol --rpc-url ${RPC_URL} --account ${ACCOUNT} --sender ${SENDER} --broadcast --verify -vvvv
+
+cloc :; cloc --force-lang="javascript",huff src/protocol/TSender.huff  && cloc --force-lang="javascript",huff src/protocol/TSender_NoCheck.huff && cloc ./src/protocol/TSender.sol
