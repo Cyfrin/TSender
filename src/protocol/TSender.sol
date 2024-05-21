@@ -5,7 +5,7 @@ pragma solidity 0.8.24;
  * @title TSender
  * @author Patrick Collins
  * @author Alex Roan
- * @uathor Giovanni Di Siena
+ * @author Giovanni Di Siena
  * @author Cyfrin
  *
  * Original Work by:
