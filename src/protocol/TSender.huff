@@ -128,7 +128,7 @@
         dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         calldataload                                                                                            // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // zero address check
-        dup1 0x00 eq zero_address_to jumpi                                                                      // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        dup1 iszero zero_address_to jumpi                                                                      // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // Store to address in memory
         [TO_ADDRESS_MEMORY_LOCATION] mstore                                                                     // [address_offset, diff, address_offset, end, diff, token_address, total_amount]     
         // Store amount in memory
