@@ -63,17 +63,13 @@ contract TSender {
             // transfer(address to, uint256 value)
             mstore(0x00, hex"a9059cbb")
             // end of array
-            // recipients.offset points to the first address of the array
+            // recipients.offset actually points to the recipients.length offset, not the first address of the array offset
             let end := add(recipients.offset, shl(5, recipients.length))
             let diff := sub(recipients.offset, amounts.offset)
 
             // Checking totals at the end
             let addedAmount := 0
-            for {
-                let addressOffset := recipients.offset
-            } 1 {
-
-            } {
+            for { let addressOffset := recipients.offset } 1 {} {
                 let recipient := calldataload(addressOffset)
 
                 // Check to address
@@ -84,7 +80,6 @@ contract TSender {
 
                 // to address
                 mstore(0x04, recipient)
-
                 // amount
                 mstore(0x24, calldataload(sub(addressOffset, diff)))
                 // Keep track of the total amount
@@ -99,9 +94,7 @@ contract TSender {
                 // increment the address offset
                 addressOffset := add(addressOffset, 0x20)
                 // if addressOffset >= end, break
-                if iszero(lt(addressOffset, end)) {
-                    break
-                }
+                if iszero(lt(addressOffset, end)) { break }
             }
 
             // Check if the totals match
@@ -125,10 +118,7 @@ contract TSender {
      * @param amounts The list of amounts to check
      * @return bool
      */
-    function areListsValid(
-        address[] calldata recipients,
-        uint256[] calldata amounts
-    ) external pure returns (bool) {
+    function areListsValid(address[] calldata recipients, uint256[] calldata amounts) external pure returns (bool) {
         if (recipients.length == 0) {
             return false;
         }
