@@ -117,18 +117,18 @@
 
     // let end := add(recipients.offset, shl(5, recipients.length))
     // recipients.length
-    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
+    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload                                             // [recipients.length, diff, token_address, total_amount]
     // add(recipients.offset, shl(5
-    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                     // [end, address_offset, diff, token_address, total_amount]
+    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                     // [end, diff, token_address, total_amount]
     [RECIPIENT_ONE_OFFSET]                                                                 // [address_offset, end, diff, token_address, total_amount]
     
     loop_start:
         dup3                                                                               // [diff, address_offset, end, diff, token_address, total_amount]   
         // To address, and setting up to use addressOffset later
         dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
-        calldataload                                                                                            // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        calldataload                                                                                            // [to_address, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // zero address check
-        dup1 iszero zero_address_to jumpi                                                                      // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        dup1 iszero zero_address_to jumpi                                                                       // [to_address, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // Store to address in memory
         [TO_ADDRESS_MEMORY_LOCATION] mstore                                                                     // [address_offset, diff, address_offset, end, diff, token_address, total_amount]     
         // Store amount in memory
