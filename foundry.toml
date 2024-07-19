@@ -16,7 +16,7 @@ fallback_oz = true
 mode = "3"
 
 [fuzz]
-runs = 200
+runs = 2000
 # At least 25% of tests should not be rejected
 max_test_rejects = 150
 seed = '0x1'
