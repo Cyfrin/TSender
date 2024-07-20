@@ -18,12 +18,9 @@ contract HelperConfig is Script {
         ANVIL_CHAIN_ID,
         ETH_MAINNET_CHAIN_ID,
         ETH_SEPOLIA_CHAIN_ID,
-        // POLYGON_MAINNET_CHAIN_ID,
         ARB_MAINNET_CHAIN_ID,
         OP_MAINNET_CHAIN_ID,
-        BASE_MAINNET_CHAIN_ID,
-        BLAST_MAINNET_CHAIN_ID
-        // LINEA_MAINNET_CHAIN_ID
+        BASE_MAINNET_CHAIN_ID
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -43,7 +40,7 @@ contract HelperConfig is Script {
     uint256 constant ARB_MAINNET_CHAIN_ID = 42161;
     uint256 constant OP_MAINNET_CHAIN_ID = 10;
     uint256 constant BASE_MAINNET_CHAIN_ID = 8453;
-    uint256 constant BLAST_MAINNET_CHAIN_ID = 81457;
+    // uint256 constant BLAST_MAINNET_CHAIN_ID = 81457;
     // uint256 constant LINEA_MAINNET_CHAIN_ID = 112233; does not support push0
 
     /*//////////////////////////////////////////////////////////////

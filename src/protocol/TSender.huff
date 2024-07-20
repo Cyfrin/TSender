@@ -8,15 +8,13 @@
 
 /* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
+#define constant NUMBER_OF_RECIPIENTS_OFFSET_OFFSET = 0x24
 #define constant NUMBER_OF_AMOUNTS_OFFSET_OFFSET = 0x44
 #define constant TOTAL_AMOUNT_OFFSET = 0x64
-#define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
-#define constant RECIPIENT_ONE_OFFSET = 0xa4
 
 /* Constants for areListsValid */
-#define constant RECIPIENTS_LENGTH_OFFSET = 0x44
+#define constant RECIPIENTS_OFFSET_OFFSET = 0x04
 #define constant AMOUNTS_OFFSET_OFFSET = 0x24
-#define constant ADDRESS_ONE_OFFSET = 0x64
 
 
 /* Constants */ 
@@ -59,17 +57,41 @@
     // wrong number of amounts! Should revert!
 
     // Function selector starts on the bottom of the stack, so pretend you see it there when looking at the stack comments
-    // Setup for later
+    // There is a ton of setup for later in here
     0x00                                                        // [total_amount]
-    [TOKEN_ADDRESS_OFFSET] calldataload                         // [token_address, total_amount]                      
-    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset, token_address, total_amount]
-    0x4 add                                                     // [true_amounts.offset, token_address, total_amount]
-    dup1                                                        // [amounts.offset, amounts.offset, token_address, total_amount]
-    calldataload                                                // [amounts.length, amounts.offset, token_address, total_amount]
-    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload                  // [recipients.length, amounts.length, amounts.offset, token_address, total_amount]
-    eq                                                          // [amounts.length == recipients.length, amounts.offset, token_address, total_amount] // 1 is true 
+    [TOKEN_ADDRESS_OFFSET] calldataload                         // [token_address, total_amount]  
+    [NUMBER_OF_RECIPIENTS_OFFSET_OFFSET] calldataload           // [fake_recipients.offset, token_address, total_amount]
+    0x4 add                                                     // [true_recipients.offset, token_address, total_amount]      
+    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [fake_amounts.offset, recipients.offset, token_address, total_amount]
+    0x4 add                                                     // [true_amounts.offset, recipients.offset, token_address, total_amount]              
+
+    // Target:   // [amounts.length, recipients.length, address_one_offset, end, diff, token_address, total_amount]
+    // Start:    // [amounts.offset, recipients.offset, token_address, total_amount]    
+    // diff = sub(recipients.offset, amounts.offset)
+    // end = add(address_one_offset, shl(5, recipients.length)
+    // address_one_offset = recipients.offset + 0x20
+
+    // This section can probably be optimized further
+    // diff
+    dup1 dup3 sub         // [diff, amounts.offset, recipients.offset, token_address, total_amount]  
+    swap2                 // [recipients.offset, amounts.offset, diff, token_address, total_amount]  
+    dup1 0x20 add         // [address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]  
+
+    // end
+    dup2 calldataload     // [recipients.length, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]    
+    0x5 shl               // [recipients.length >> 5, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]   
+    dup2 add              // [end, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]   
+    swap3                 // [amounts.offset, address_one_offset, recipients.offset, end, diff, token_address, total_amount]   
+    calldataload          // [amounts.length, address_one_offset, recipients.offset, end, diff, token_address, total_amount]   
+
+    // address_one_offset
+    swap1                 // [address_one_offset, amounts.length, recipients.offset, end, diff, token_address, total_amount]   
+    swap2                 // [recipients.offset, amounts.length, address_one_offset, end, diff, token_address, total_amount]  
+    calldataload          // [recipients.length, amounts.length, address_one_offset, end, diff, token_address, total_amount]
+
+    eq                                                          // [amounts.length == recipients.length, address_one_offset, end, diff, token_address, total_amount]
     // Function selector is technically still on the bottom of the stack
-    lengths_match jumpi                          // [amounts.offset, token_address, total_amount]
+    lengths_match jumpi                                         // [address_one_offset, end, diff, token_address, total_amount]
         // cast sig TSender__LengthsDontMatch()
         0x50a302d6 0x00 mstore
         0x04 [TWENTY_EIGHT] revert
@@ -79,26 +101,26 @@
     // This next line will result in memory looking like this:
     // 0x0000000000000000000000000000000000000000000000000000000023b872dd
     // It's different from yul. Yul does a shl (left shift)
-    0x23b872dd 0x00 mstore                       // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd}
+    0x23b872dd 0x00 mstore                                        // [address_one_offset, end, diff, token_address, total_amount]
     // Since memory looks like the comment above, we could do a left shift, or we could just say calldata starts at byte offset 28
     // We do the latter since it means we don't have to do a left shift
-    caller 0x20 mstore                           // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32)} 
-    address 0x40 mstore                          // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32)}
+    caller 0x20 mstore                                            // [address_one_offset, end, diff, token_address, total_amount]
+    address 0x40 mstore                                           // [address_one_offset, end, diff, token_address, total_amount]
     // amount should be at 0x64 in calldata, then store it at 0x60 in memory
-    0x64 calldataload 0x60 mstore                // [amounts.offset, token_address, total_amount] -> {0x00: 0x23b872dd, 0x20: msg.sender (bytes32), 0x40: address(this) (bytes32), 0x60: amount (bytes32)}
+    [TOTAL_AMOUNT_OFFSET] calldataload 0x60 mstore                // [address_one_offset, end, diff, token_address, total_amount]
 
     ///////////////////////////////////////////////////////////////
     //              CALL TRANSFERFROM, JUMP IF REVERTED
     ///////////////////////////////////////////////////////////////
     // Setup return
-    0x00 0x00                                    // [0, 0, amounts.offset, token_address, total_amount]
+    0x00 0x00                                    // [0, 0, address_one_offset, end, diff, token_address, total_amount]
     // Setup memory (start at 0x1c aka 28) 
     // This is because we are not doing the left shift that the yul does when calling `mstore`
-    0x64 [TWENTY_EIGHT]                          // [28, 0x64, 0, 0, amounts.offset, token_address, total_amount]
+    0x64 [TWENTY_EIGHT]                          // [28, 0x64, 0, 0, address_one_offset, end, diff, token_address, total_amount]
     // Setup value & address of ERC20
-    0x00 [TOKEN_ADDRESS_OFFSET] calldataload     // [token_address, 0, 28, 0x64, 0, 0, amounts.offset, token_address, total_amount]
-    gas call // program counter 4c               // [success, amounts.offset, token_address, total_amount]
-    transfer_from_didnt_fail jumpi               // 
+    0x00 [TOKEN_ADDRESS_OFFSET] calldataload     // [token_address, 0, 28, 0x64, 0, 0, address_one_offset, end, diff, token_address, total_amount]
+    gas call // program counter 4c               // [success, address_one_offset, end, diff, token_address, total_amount]
+    transfer_from_didnt_fail jumpi                
         // cast sig TSender__TransferFailed()
         0xfa10ea06 0x00 mstore
         0x04 [TWENTY_EIGHT] revert
@@ -110,25 +132,15 @@
     // transfer(address,amount)
     // This next line setups up memory to look like this:
     // 0x00000000000000000000000000000000000000000000000000000000a9059cbb 
-    0xa9059cbb 0x00 mstore        
-
-    // let diff := sub(recipients.offset, amounts.offset)
-    [NUMBER_OF_RECIPIENTS_OFFSET] sub                                                     // [diff, token_address, total_amount]
-
-    // let end := add(recipients.offset, shl(5, recipients.length))
-    // recipients.length
-    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
-    // add(recipients.offset, shl(5
-    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                     // [end, address_offset, diff, token_address, total_amount]
-    [RECIPIENT_ONE_OFFSET]                                                                 // [address_offset, end, diff, token_address, total_amount]
+    0xa9059cbb 0x00 mstore                                                                 // [address_one_offset, end, diff, token_address, total_amount]
     
     loop_start:
         dup3                                                                               // [diff, address_offset, end, diff, token_address, total_amount]   
         // To address, and setting up to use addressOffset later
         dup2 dup1                                                                                               // [address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
-        calldataload                                                                                            // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        calldataload                                                                                            // [to_address, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // zero address check
-        dup1 0x00 eq zero_address_to jumpi                                                                      // [to_address, address_offset, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
+        dup1 iszero zero_address_to jumpi                                                                       // [to_address, address_offset, diff, address_offset, end, diff, token_address, total_amount]  
         // Store to address in memory
         [TO_ADDRESS_MEMORY_LOCATION] mstore                                                                     // [address_offset, diff, address_offset, end, diff, token_address, total_amount]     
         // Store amount in memory
@@ -203,7 +215,9 @@
 // 000000000000000000000000000000000000000000000000000000000000000f  // amount 2
 #define macro ARE_LISTS_VALID() = takes (0) returns (0) { 
     // The recipients starting location will always be 0x44
-    [RECIPIENTS_LENGTH_OFFSET] calldataload  // [recipients.length]
+    [RECIPIENTS_OFFSET_OFFSET] calldataload  // [recipients.offset]
+    0x4 add                                  // [true_recipients.offset]
+    calldataload                             // [recipients.length]
     dup1                                     // [recipients.length, recipients.length]
     dup1                                     // [recipients.length, recipients.length, recipients.length]   
     // check if the number of recipients is 0
@@ -226,7 +240,7 @@
         // Check for zero address
         dup1                               // [loop_count, loop_count, recipients.length]
         0x20 mul                           // [outer_loop_count * 32, recipients.length]
-        [ADDRESS_ONE_OFFSET] add           // [current_address_offset, outer_loop_count, recipients.length]
+        [RECIPIENTS_OFFSET_OFFSET] calldataload 0x24 add add           // [current_address_offset, outer_loop_count, recipients.length]
         calldataload                       // [outer_loop_address, outer_loop_count, recipients.length]
         dup1                               // [outer_loop_address, outer_loop_address, outer_loop_count, recipients.length]
         iszero return_false jumpi          // [outer_loop_address, outer_loop_count, recipients.length]
@@ -251,7 +265,7 @@
             // Compare addresses
             dup1                           // [inner_loop_count, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             0x20 mul                       // [inner_loop_count * 32, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
-            [ADDRESS_ONE_OFFSET] add       // [inner_loop_address_offset, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
+            [RECIPIENTS_OFFSET_OFFSET] calldataload 0x24 add add       // [inner_loop_address_offset, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
             calldataload                   // [inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             dup3                           // [outer_loop_address, inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             // We could obviously combine these next two jumps into one for gas optimization
