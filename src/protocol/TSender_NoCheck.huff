@@ -7,9 +7,9 @@
 
 /* Calldata Offsets */
 #define constant TOKEN_ADDRESS_OFFSET = 0x04
+#define constant NUMBER_OF_RECIPIENTS_OFFSET_OFFSET = 0x24
 #define constant NUMBER_OF_AMOUNTS_OFFSET_OFFSET = 0x44
-#define constant NUMBER_OF_RECIPIENTS_OFFSET = 0x84
-#define constant RECIPIENT_ONE_OFFSET = 0xa4
+#define constant TOTAL_AMOUNT_OFFSET = 0x64
 
 /* Constants */ 
 #define constant TWENTY_EIGHT = 0x1c
@@ -88,20 +88,22 @@
     0xa9059cbb 0x00 mstore        
 
     // Setup for later
-    [TOKEN_ADDRESS_OFFSET] calldataload                                                   // [token_address]                      
+    [NUMBER_OF_RECIPIENTS_OFFSET_OFFSET] calldataload                                     // [recipients.offset]       
+    0x4 add                                                                               // [true_recipients.offset]          
+    [TOKEN_ADDRESS_OFFSET] calldataload                                                   // [token_address, recipients.offset]     
 
     // let diff := sub(recipients.offset, amounts.offset)
     // remember, our number of amounts is stored in memory, not statically
-    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset]
-    0x4 add                                                     // [true_amounts.offset]
-    [NUMBER_OF_RECIPIENTS_OFFSET] sub                           // [diff, token_address]
+    [NUMBER_OF_AMOUNTS_OFFSET_OFFSET] calldataload              // [amounts.offset, token_address, recipients.offset]    
+    0x4 add                                                     // [true_amounts.offset, token_address, recipients.offset]    
+    dup3 sub                                                    // [diff, token_address, recipients.offset] 
+    dup3 0x20 add                                               // [address_offset, diff, token_address, recipients.offset] 
 
-    // let end := add(recipients.offset, shl(5, recipients.length))
-    // recipients.length
-    [NUMBER_OF_RECIPIENTS_OFFSET] calldataload 
+    // let end := add(recipients.offset, shl(5, recipients.length)
+    dup4 calldataload                                           // [recipients.length, address_offset, diff, token_address, recipients.offset] 
     // add(recipients.offset, shl(5
-    0x5 shl [RECIPIENT_ONE_OFFSET] add                                                                           // [end, diff, token_address]
-    [RECIPIENT_ONE_OFFSET]                                                                                       // [address_offset, end, diff, token_address]
+    0x5 shl dup2 add                                            // [end, address_offset, diff, token_address, recipients.offset] 
+    swap1                                                       // [address_offset, end, diff, token_address, recipients.offset]
 
     loop_start:
         dup3                                                // [diff, address_offset, end, diff, token_address]                        

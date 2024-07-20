@@ -24,13 +24,12 @@
     - [Deployment](#deployment)
 - [Audit Data](#audit-data)
   - [Known issues](#known-issues)
-  - [Expected Token Integrations](#expected-token-integrations)
   - [Scope](#scope)
-  - [Chain compatibility](#chain-compatibility)
-    - [Target deployment chains](#target-deployment-chains)
+  - [Chain compatibility and token compatibility](#chain-compatibility-and-token-compatibility)
+    - [Target deployment chains by contracts](#target-deployment-chains-by-contracts)
+    - [Target deployment tokens by chains:](#target-deployment-tokens-by-chains)
   - [Notes](#notes)
 - [Acknowledgements](#acknowledgements)
-- [Future (Huff) gas optimization](#future-huff-gas-optimization)
 
 # About
 
@@ -77,13 +76,12 @@ The work here was inspired by the [Gaslite team](https://github.com/PopPunkLLC/G
 | 1000            | 3.51% | 3.66%   | 3.53% | 3.66%            |
 
 ### Actual Gas Costs
-
 |                      | Solidity | Yul      | Gaslite  | Huff     | Huff, no check |
 | -------------------- | -------- | -------- | -------- | -------- | -------------- |
 | 1 Recipient Drop     | 57377    | 56170    | 56080    | 55409    | 55300          |
 | 10 Recipient Drops   | 295287   | 285737   | 285296   | 284931   | 284507         |
 | 100 Recipient Drops  | 2674618  | 2581616  | 2577665  | 2580360  | 2576786        |
-| 1000 Recipient Drops | 26490540 | 25561280 | 25522229 | 25555524 | 25520450       |
+| 1000 Recipient Drops | 26490540 | 25561280 | 25522229 | 25553551 | 25520471       |
 
 <p align="center">
 <img src="./img/gas-vs-1000.png" width="500" alt="gas-vs-1000.png">
@@ -171,12 +169,6 @@ make deployHuff
 - Does not check the return value of ERC20s, but it does check to see if the `transferFrom` or `transfer` call was successful. Meaning ERC20s that return `false` on a failed `transfer` or `transferFrom` but successfully execute, are not supported. If any of the expected token integrations are vulnerable to this pattern, flag it. 
 - Upgradable/Deny List tokens can prevent this contract from working. We expect that, in the case that this contract or any recipient is on a deny list, the entire transaction will revert. 
 
-## Expected Token Integrations
-- USDC 
-- USDT
-- LINK
-- WETH
-
 ## Scope
 
 ```bash
@@ -197,11 +189,11 @@ Ignore:
 
 Deploy scripts are not in scope because we can easily redeploy if we have an issue. 
 
-## Chain compatibility
+## Chain compatibility and token compatibility
 
 We expect to be able to run our deploy scripts, and it will prevent us from deploying contracts to chains that are not supported. Right now, zkSync will work with the `yul` based `TSender.sol`, and all other chains listed in the `HelperConfig.sol` will work with the `TSender.huff` contract. 
 
-### Target deployment chains
+### Target deployment chains by contracts
 - `TSender.sol`:
   - zkSync Era
   - Everything in the `TSender.huff` list
@@ -210,7 +202,28 @@ We expect to be able to run our deploy scripts, and it will prevent us from depl
   - Arbitrum
   - Optimism
   - Base
-  - Blast
+
+### Target deployment tokens by chains:
+- ZKSync Era:
+  - USDC
+  - WETH
+  - LINK
+- Ethereum:
+  - USDC
+  - WETH
+  - LINK
+- Arbitrum:
+  - USDC
+  - WETH
+  - LINK
+- Optimism:
+  - USDC
+  - WETH
+  - LINK
+- Base:
+  - USDC
+  - WETH
+  - LINK
 
 ## Notes
 - There is an issue with how quickly the `foundry-zksync` compiler works, so we avoid compiling the `DeployHuff.s.sol` contract. 

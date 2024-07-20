@@ -13,9 +13,8 @@
 #define constant TOTAL_AMOUNT_OFFSET = 0x64
 
 /* Constants for areListsValid */
+#define constant RECIPIENTS_OFFSET_OFFSET = 0x04
 #define constant AMOUNTS_OFFSET_OFFSET = 0x24
-#define constant RECIPIENTS_LENGTH_OFFSET = 0x44
-#define constant ADDRESS_ONE_OFFSET = 0x64
 
 
 /* Constants */ 
@@ -67,19 +66,29 @@
     0x4 add                                                     // [true_amounts.offset, recipients.offset, token_address, total_amount]              
 
     // Target:   // [amounts.length, recipients.length, address_one_offset, end, diff, token_address, total_amount]
-    // Starting: // [recipients.offset, amounts.offset, token_address, total_amount]
-    // let diff := sub(recipients.offset, amounts.offset)
-    dup2 dup2 sub                                               // [diff, amounts.offset, recipients.offset, token_address, total_amount]
-    swap2                                                       // [recipients.offset, amounts.offset, diff, token_address, total_amount]
-    // let end := add(recipients.offset, shl(5, recipients.length)
-    dup1 calldataload 0x5 shl                                   // [shifted, recipients.offset, amounts.offset, diff, token_address, total_amount]
-    dup2 add                                                    // [end, recipients.offset, amounts.offset, diff, token_address, total_amount]
-    swap2                                                       // [amounts.offset, recipients.offset, end, diff, token_address, total_amount]
-    calldataload                                                // [amounts.length, recipients.offset, end, diff, token_address, total_amount]
-    dup2 0x20 add                                               // [address_one_offset, amounts.length, recipients.offset, end, diff, token_address, total_amount]
-    swap2                                                       // [recipients.offset, amounts.length, address_one_offset, end, diff, token_address, total_amount]
-    calldataload                                                // [recipients.length, amounts.length, address_one_offset, end, diff, token_address, total_amount]
-    // Ok, now into more basic stuff
+    // Start:    // [amounts.offset, recipients.offset, token_address, total_amount]    
+    // diff = sub(recipients.offset, amounts.offset)
+    // end = add(address_one_offset, shl(5, recipients.length)
+    // address_one_offset = recipients.offset + 0x20
+
+    // This section can probably be optimized further
+    // diff
+    dup1 dup3 sub         // [diff, amounts.offset, recipients.offset, token_address, total_amount]  
+    swap2                 // [recipients.offset, amounts.offset, diff, token_address, total_amount]  
+    dup1 0x20 add         // [address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]  
+
+    // end
+    dup2 calldataload     // [recipients.length, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]    
+    0x5 shl               // [recipients.length >> 5, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]   
+    dup2 add              // [end, address_one_offset, recipients.offset, amounts.offset, diff, token_address, total_amount]   
+    swap3                 // [amounts.offset, address_one_offset, recipients.offset, end, diff, token_address, total_amount]   
+    calldataload          // [amounts.length, address_one_offset, recipients.offset, end, diff, token_address, total_amount]   
+
+    // address_one_offset
+    swap1                 // [address_one_offset, amounts.length, recipients.offset, end, diff, token_address, total_amount]   
+    swap2                 // [recipients.offset, amounts.length, address_one_offset, end, diff, token_address, total_amount]  
+    calldataload          // [recipients.length, amounts.length, address_one_offset, end, diff, token_address, total_amount]
+
     eq                                                          // [amounts.length == recipients.length, address_one_offset, end, diff, token_address, total_amount]
     // Function selector is technically still on the bottom of the stack
     lengths_match jumpi                                         // [address_one_offset, end, diff, token_address, total_amount]
@@ -206,7 +215,9 @@
 // 000000000000000000000000000000000000000000000000000000000000000f  // amount 2
 #define macro ARE_LISTS_VALID() = takes (0) returns (0) { 
     // The recipients starting location will always be 0x44
-    [RECIPIENTS_LENGTH_OFFSET] calldataload  // [recipients.length]
+    [RECIPIENTS_OFFSET_OFFSET] calldataload  // [recipients.offset]
+    0x4 add                                  // [true_recipients.offset]
+    calldataload                             // [recipients.length]
     dup1                                     // [recipients.length, recipients.length]
     dup1                                     // [recipients.length, recipients.length, recipients.length]   
     // check if the number of recipients is 0
@@ -229,7 +240,7 @@
         // Check for zero address
         dup1                               // [loop_count, loop_count, recipients.length]
         0x20 mul                           // [outer_loop_count * 32, recipients.length]
-        [ADDRESS_ONE_OFFSET] add           // [current_address_offset, outer_loop_count, recipients.length]
+        [RECIPIENTS_OFFSET_OFFSET] calldataload 0x24 add add           // [current_address_offset, outer_loop_count, recipients.length]
         calldataload                       // [outer_loop_address, outer_loop_count, recipients.length]
         dup1                               // [outer_loop_address, outer_loop_address, outer_loop_count, recipients.length]
         iszero return_false jumpi          // [outer_loop_address, outer_loop_count, recipients.length]
@@ -254,7 +265,7 @@
             // Compare addresses
             dup1                           // [inner_loop_count, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             0x20 mul                       // [inner_loop_count * 32, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
-            [ADDRESS_ONE_OFFSET] add       // [inner_loop_address_offset, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
+            [RECIPIENTS_OFFSET_OFFSET] calldataload 0x24 add add       // [inner_loop_address_offset, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]   
             calldataload                   // [inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             dup3                           // [outer_loop_address, inner_loop_address, inner_loop_count, outer_loop_address, outer_loop_count, recipients.length]
             // We could obviously combine these next two jumps into one for gas optimization
