@@ -279,6 +279,52 @@ abstract contract Base_Test is Test {
         assertEq(mockERC20.balanceOf(recipientOne), 0);
     }
 
+    // Per CodeHawks PoC
+    function testManuallyCreatedCalldataWorks() public {
+        bytes memory callDataA =
+            hex"82947abe000000000000000000000000e87162786bb97c37c6e0f3a7077a7f0236580ea5000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000010000000000000000000000004dba461ca9342f4a6cf942abd7eacf8ae259108c00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000064";
+        bytes memory callDataB =
+            hex"82947abe000000000000000000000000e87162786bb97c37c6e0f3a7077a7f0236580ea500000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000010000000000000000000000004dba461ca9342f4a6cf942abd7eacf8ae259108c";
+        address recipient = makeAddr("Bob");
+
+        address erc20 = makeAddr("ERC20");
+        vm.etch(erc20, address(mockERC20).code);
+        mockERC20 = MockERC20(erc20);
+
+        // Arrange
+        vm.startPrank(address(this));
+        mockERC20.mint(1e9);
+        mockERC20.approve(address(tSender), 1e9);
+        vm.stopPrank();
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = recipient;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 0;
+
+        uint256 balanceBeforeA = mockERC20.balanceOf(recipient);
+
+        // Calldata A
+        (bool successReferenceA,) = address(tSender).call(callDataA);
+
+        uint256 balanceAfterA = mockERC20.balanceOf(recipient);
+        assertEq(successReferenceA, true);
+        assertEq(balanceAfterA - balanceBeforeA, 100);
+
+        // Calldata B
+        vm.startPrank(address(this));
+        mockERC20.mint(1e9);
+        mockERC20.approve(address(tSender), 1e9);
+        vm.stopPrank();
+        uint256 balanceBeforeB = mockERC20.balanceOf(recipient);
+
+        (bool successReferenceB,) = address(tSender).call(callDataB);
+
+        uint256 balanceAfter = mockERC20.balanceOf(recipient);
+        assertEq(successReferenceB, true);
+        assertEq(balanceAfter - balanceBeforeB, 100);
+    }
+
     /*//////////////////////////////////////////////////////////////
                          areListsValid
     //////////////////////////////////////////////////////////////*/
