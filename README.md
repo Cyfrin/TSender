@@ -7,6 +7,10 @@
 
 - [TSender](#tsender)
   - [Percent Gas Efficiency Improvement vs Solidity](#percent-gas-efficiency-improvement-vs-solidity)
+- [Deployment addresses](#deployment-addresses)
+  - [Tsender.sol](#tsendersol)
+  - [Tsender.huff](#tsenderhuff)
+  - [Tsender\_NoCheck.huff](#tsender_nocheckhuff)
 - [About](#about)
   - [TSender Features](#tsender-features)
   - [GasliteDrop Comparison](#gaslitedrop-comparison)
@@ -30,6 +34,23 @@
     - [Target deployment tokens by chains:](#target-deployment-tokens-by-chains)
   - [Notes](#notes)
 - [Acknowledgements](#acknowledgements)
+
+# Deployment addresses
+
+## Tsender.sol
+- [ZKsync](https://explorer.zksync.io/address/0x7e645Ea4386deb2E9e510D805461aA12db83fb5E)
+
+## Tsender.huff
+- [Ethereum](https://etherscan.io/address/0x3ad9f29ab266e4828450b33df7a9b9d7355cd821)
+- [Arbitrum](https://arbiscan.io/address/0xa2b5aedf7eef6469ab9cbd99de24a6881702eb19)
+- [Optimism](https://optimistic.etherscan.io/address/0x95b9aa5ef74d93f17d0a4f025ed23a2d7df69220)
+- [Base](https://basescan.org/address/0x31801c3e09708549c1b2c9e1cfbf001399a1b9fa)
+
+## Tsender_NoCheck.huff
+- [Ethereum](https://etherscan.io/address/0x7d4a746cb398e5ae19f6cbdc08473664adbc6da5)
+- [Arbitrum](https://arbiscan.io/address/0x091bab6497f2cc429c82c5807df4faa34235cccc)
+- [Optimism](https://optimistic.etherscan.io/address/0xa0c7ada2c7c29729d12e2649bc6a0a293ac46725)
+- [Base](https://basescan.org/address/0x39338138414df90ec67dc2ee046ab78bcd4f56d9)
 
 # About
 

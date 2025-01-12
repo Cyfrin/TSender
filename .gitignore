@@ -22,3 +22,5 @@ zkout/
 opcode-research/
 
 .zksolc-libraries-cache/
+__TEMP__*
+broadcast/
