@@ -39,6 +39,7 @@
 
 ## Tsender.sol
 - [ZKsync](https://explorer.zksync.io/address/0x7e645Ea4386deb2E9e510D805461aA12db83fb5E)
+- [Sepolia](https://sepolia.etherscan.io/address/0xa27c5C77DA713f410F9b15d4B0c52CAe597a973a)
 
 ## Tsender.huff
 - [Ethereum](https://etherscan.io/address/0x3ad9f29ab266e4828450b33df7a9b9d7355cd821)
