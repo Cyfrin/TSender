@@ -39,7 +39,7 @@
 
 ## Tsender.sol
 - [ZKsync](https://explorer.zksync.io/address/0x7e645Ea4386deb2E9e510D805461aA12db83fb5E)
-- [Optimism](https://explorer.zksync.io/address/0xAaf523DF9455cC7B6ca5637D01624BC00a5e9fAa)
+- [Optimism](https://optimistic.etherscan.io/address/0xAaf523DF9455cC7B6ca5637D01624BC00a5e9fAa)
 - [Sepolia](https://sepolia.etherscan.io/address/0xa27c5C77DA713f410F9b15d4B0c52CAe597a973a)
 
 ## Tsender.huff
